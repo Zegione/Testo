@@ -39,24 +39,22 @@ export function SidebarNav() {
     <SidebarMenu>
       {navItems.map((item) => (
         <SidebarMenuItem key={item.href}>
-          <Link href={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))}
-              className={cn(
-                "w-full justify-start",
-                (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)))
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
-                  : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}
-              tooltip={item.label}
-            >
-              <a>
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.label}</span>
-              </a>
-            </SidebarMenuButton>
-          </Link>
+          <SidebarMenuButton
+            asChild
+            isActive={pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))}
+            className={cn(
+              "w-full justify-start",
+              (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)))
+                ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            )}
+            tooltip={item.label}
+          >
+            <Link href={item.href}>
+              <item.icon className="h-5 w-5" />
+              <span className="font-medium">{item.label}</span>
+            </Link>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
     </SidebarMenu>
