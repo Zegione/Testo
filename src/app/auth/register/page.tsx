@@ -16,7 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -24,9 +24,15 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const { registerUser, loading, error, clearError } = useAuth();
+  const { registerUser, user, initialLoading, loading, error, clearError } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!initialLoading && user) {
+      router.push('/'); // Redirect to dashboard if logged in
+    }
+  }, [user, initialLoading, router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -51,7 +57,7 @@ export default function RegisterPage() {
     }
   };
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (error) {
       toast({
         title: "Registration Error",
@@ -61,6 +67,14 @@ export default function RegisterPage() {
       clearError();
     }
   }, [error, toast, clearError]);
+
+  if (initialLoading || (!initialLoading && user)) {
+     return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <Card className="w-full max-w-sm shadow-xl">

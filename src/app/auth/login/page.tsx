@@ -17,16 +17,22 @@ import { useAuth, UserRole } from "@/hooks/useAuth";
 import { Loader2, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginAs, setLoginAs] = useState<UserRole>("mahasiswa");
-  const { loginUser, loading, error, clearError } = useAuth();
+  const { loginUser, user, initialLoading, loading, error, clearError } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!initialLoading && user) {
+      router.push('/'); // Redirect to dashboard if logged in
+    }
+  }, [user, initialLoading, router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -36,6 +42,7 @@ export default function LoginPage() {
       // Navigation is handled inside loginUser on success
     } catch (err: any) {
       // Error is set in AuthContext, display it via toast
+      // This catch block might not be strictly necessary if loginUser itself doesn't throw and just sets error state
       toast({
         title: "Login Failed",
         description: error || "An unexpected error occurred.",
@@ -44,7 +51,7 @@ export default function LoginPage() {
     }
   };
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (error) {
       toast({
         title: "Login Error",
@@ -55,6 +62,13 @@ export default function LoginPage() {
     }
   }, [error, toast, clearError]);
 
+  if (initialLoading || (!initialLoading && user)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <Card className="w-full max-w-sm shadow-xl">
@@ -101,6 +115,10 @@ export default function LoginPage() {
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="dosen" id="r-dosen" />
                 <Label htmlFor="r-dosen">Dosen</Label>
+              </div>
+               <div className="flex items-center space-x-2">
+                <RadioGroupItem value="admin" id="r-admin" />
+                <Label htmlFor="r-admin">Admin</Label>
               </div>
             </RadioGroup>
           </div>
