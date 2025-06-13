@@ -112,7 +112,7 @@ export function SidebarNav() {
       )}
 
       <SidebarSeparator className="my-2" />
-      {user ? (
+      {user && (
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={logoutUser}
@@ -124,45 +124,6 @@ export function SidebarNav() {
             <span className="font-medium">Logout</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
-      ) : (
-        <>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === "/auth/login"}
-              className={cn(
-                "w-full justify-start",
-                 pathname === "/auth/login"
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
-                  : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}
-              tooltip="Login"
-            >
-              <Link href="/auth/login">
-                <LogIn className="h-5 w-5" />
-                <span className="font-medium">Login</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === "/auth/register"}
-              className={cn(
-                "w-full justify-start",
-                 pathname === "/auth/register"
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
-                  : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}
-              tooltip="Register"
-            >
-              <Link href="/auth/register">
-                <UserPlus className="h-5 w-5" />
-                <span className="font-medium">Register</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </>
       )}
     </SidebarMenu>
   );
