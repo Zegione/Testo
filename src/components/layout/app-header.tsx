@@ -73,7 +73,7 @@ const getPageTitle = (pathname: string, navItems: NavItem[], adminNavs: NavItem[
 };
 
 
-export function AppHeader() { // Removed initialPageTitle prop
+export function AppHeader() { 
   const { user, logoutUser, loading: authLoading, initialLoading } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -82,12 +82,12 @@ export function AppHeader() { // Removed initialPageTitle prop
 
   const filteredMainNavs = mainNavItems.filter(item => {
     if (!item.requiredRole) return true;
-    if (!user) return false; // Should not happen if layout protects routes
-    if (user.role === 'admin') return true; // Admin sees all main navs
-    if (user.role === 'dosen') { // Dosen sees dashboard and schedule
+    if (!user) return false; 
+    if (user.role === 'admin') return true; 
+    if (user.role === 'dosen') { 
         return item.href === "/" || item.href === "/schedule";
     }
-    // Mahasiswa sees items matching 'mahasiswa' role or undefined role
+    
     return user.role === item.requiredRole || item.requiredRole === undefined;
   });
 
@@ -117,9 +117,9 @@ export function AppHeader() { // Removed initialPageTitle prop
       onClick={() => { if (isSheetLink) setMobileMenuOpen(false); }}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-        (pathname === href || (href !== "/" && pathname.startsWith(item.href || href))) && "text-primary bg-muted",
+        (pathname === href || (href !== "/" && pathname.startsWith(href))) && "text-primary bg-muted",
         !isSheetLink && "px-2 py-1 text-sm transition-colors hover:text-foreground", // Desktop specific
-        !isSheetLink && (pathname === href || (href !== "/" && pathname.startsWith(item.href || href))) ? "text-foreground font-medium" : !isSheetLink && "text-muted-foreground" // Desktop active/inactive
+        !isSheetLink && (pathname === href || (href !== "/" && pathname.startsWith(href))) ? "text-foreground font-medium" : !isSheetLink && "text-muted-foreground" // Desktop active/inactive
       )}
     >
       <Icon className="h-4 w-4" />
