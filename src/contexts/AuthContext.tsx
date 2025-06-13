@@ -46,7 +46,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userData = userDocSnap.data();
           setUser({ ...firebaseUser, role: userData.role as UserRole });
         } else {
+          // This case might happen if user document is not created yet or deleted
+          // Defaulting to undefined role, or handle as an error/specific state
           setUser({ ...firebaseUser, role: undefined });
+           console.warn(`User document not found for UID: ${firebaseUser.uid}. User might not have a role assigned.`);
         }
       } else {
         setUser(null);
@@ -84,9 +87,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loginUser = async (email: string, pass: string, loginAsRole: UserRole) => {
     setLoading(true);
     setError(null);
+    let signedInUser: AppUser | null = null;
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       const firebaseUser = userCredential.user;
+      signedInUser = firebaseUser as AppUser; // Temporarily assign
 
       const userDocRef = doc(db, 'users', firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
@@ -97,39 +103,64 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         let validationError: string | null = null;
 
+        // Admin can only log in as admin
         if (loginAsRole === 'admin' && userActualRole !== 'admin') {
-          validationError = `You do not have permission to log in as Admin.`;
-        } else if (loginAsRole === 'dosen' && userActualRole === 'mahasiswa') {
+          validationError = `You do not have permission to log in as Admin. Your role is ${userActualRole}.`;
+        } 
+        // Dosen can log in as dosen or mahasiswa.
+        // Mahasiswa can only log in as mahasiswa.
+        else if (loginAsRole === 'dosen' && userActualRole === 'mahasiswa') {
           validationError = `Your account role (${userActualRole}) does not match the selected login role (${loginAsRole}).`;
         }
 
+
         if (validationError) {
           setError(validationError);
-          // console.warn("Login validation failed:", validationError); // Optional: for debugging handled validations
-          if (auth.currentUser) { 
+          // Sign out the user if they were inadvertently logged in by signInWithEmailAndPassword
+          if (auth.currentUser) {
             await firebaseSignOut(auth);
           }
           setUser(null);
-          return; // Exit after setting error for validation, finally block will still run
+          signedInUser = null; 
+          return; 
         }
 
         setUser({ ...firebaseUser, role: userActualRole });
         router.push('/');
       } else {
-        const firestoreError = 'User data not found. Please contact support.';
+        const firestoreError = 'User data not found in Firestore. Please contact support.';
         setError(firestoreError);
         console.error("Login error (Firestore data missing):", firestoreError);
         if (auth.currentUser) {
           await firebaseSignOut(auth);
         }
         setUser(null);
-        return; // Exit, finally block will still run
+        signedInUser = null;
+        return; 
       }
-    } catch (e: any) { // Catches Firebase auth errors or other unexpected errors
-      setError(e.message);
-      console.error("Login error (auth or unexpected):", e);
-      if (auth.currentUser) {
-        await firebaseSignOut(auth);
+    } catch (e: any) {
+      const knownFirebaseAuthErrorCodes = [
+        'auth/invalid-credential',
+        'auth/wrong-password',
+        'auth/user-not-found',
+        'auth/invalid-email',
+        'auth/user-disabled',
+        'auth/too-many-requests',
+      ];
+
+      if (e.code && knownFirebaseAuthErrorCodes.includes(e.code)) {
+        setError(e.message || 'Login failed. Please check your credentials.');
+      } else {
+        setError(e.message || 'An unexpected error occurred during login.');
+        console.error("Login error (unexpected or non-auth Firebase error):", e);
+      }
+      
+      if (signedInUser || auth.currentUser) { // If user was somehow signed in or is still current
+        try {
+          await firebaseSignOut(auth);
+        } catch (signOutError) {
+          console.error("Error signing out after login failure:", signOutError);
+        }
       }
       setUser(null);
     } finally {
