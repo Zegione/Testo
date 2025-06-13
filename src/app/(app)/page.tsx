@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Bell, BookOpen, CalendarCheck2, TrendingUp, GraduationCap as GraduationCapIcon, LineChart as LineChartIcon, FileText as FileTextIcon, Users, Edit } from "lucide-react";
+import { ArrowRight, Bell, BookOpen, CalendarCheck2, TrendingUp, GraduationCap as GraduationCapIcon, LineChart as LineChartIcon, FileText as FileTextIcon, Users, Edit, Star } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import React, { useState, useMemo, useEffect } from 'react';
@@ -14,7 +14,7 @@ import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTool
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend as RechartsLegend, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { usePageTitle } from "@/components/layout/app-header"; // Assuming this hook might be used by pages
+import { usePageTitle } from "@/components/layout/app-header"; 
 
 // Data KHS (sama seperti di halaman KHS untuk contoh ini)
 const khsData: { [semester: string]: { courseId: string; courseName: string; credits: number; grade: string; score: number }[] } = {
@@ -69,7 +69,6 @@ const dosenSummaryCards = [
 
 export default function DashboardPage() {
   const { user, initialLoading } = useAuth();
-  // usePageTitle("Dashboard"); // Page can set its title if needed, AppHeader will derive it too
   const [selectedSemester, setSelectedSemester] = useState<string>("1");
   
   useEffect(() => {
@@ -126,10 +125,18 @@ export default function DashboardPage() {
     });
   }, []);
 
+  const cumulativeIPK = progressChartData.length > 0 ? progressChartData[progressChartData.length - 1].IPK : 0;
+  const currentAcademicSemester = progressChartData.length > 0 ? progressChartData.length : 0; // Assuming semesters are 1-indexed and contiguous
+
+  const mahasiswaSummaryCards = [
+    { title: "IPK Kumulatif", value: cumulativeIPK.toFixed(2), icon: Star, color: "bg-indigo-500 text-white", description: "Indeks Prestasi Kumulatif" },
+    { title: "Semester Saat Ini", value: currentAcademicSemester, icon: GraduationCapIcon, color: "bg-rose-500 text-white", description: "Batas studi : 14 semester" },
+    { title: "SKS Semester Ini", value: `${semesterTotalCredits} SKS`, icon: FileTextIcon, color: "bg-purple-500 text-white", description: "Total SKS diambil semester ini" },
+  ];
+
   if (initialLoading) {
     return (
       <>
-        {/* AppHeader is now rendered by the layout */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
           <Card className="shadow-lg">
             <CardHeader>
@@ -137,11 +144,25 @@ export default function DashboardPage() {
               <Skeleton className="h-4 w-1/2 rounded-md mt-1" />
             </CardHeader>
             <CardContent>
+               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+                {[...Array(3)].map((_, index) => (
+                  <Card key={index} className="shadow-md">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <Skeleton className="h-4 w-2/3 rounded-md" />
+                      <Skeleton className="h-5 w-5 rounded-md" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-6 w-1/3 rounded-md" />
+                      <Skeleton className="h-3 w-1/2 rounded-md mt-1" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
               <Skeleton className="h-4 w-full rounded-md" />
             </CardContent>
           </Card>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, index) => (
+            {[...Array(4)].map((_, index) => ( // This was for old cards, we can adjust or remove
               <Card key={index} className="shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <Skeleton className="h-4 w-2/3 rounded-md" />
@@ -173,14 +194,28 @@ export default function DashboardPage() {
   if (user?.role === 'mahasiswa') {
     return (
       <>
-        {/* AppHeader is now rendered by the layout */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-          <Card className="shadow-lg">
+          <Card className="shadow-lg mb-6">
             <CardHeader>
-              <CardTitle className="font-headline text-2xl">Selamat Datang, {user.email || 'Mahasiswa'}!</CardTitle>
+              <CardTitle className="font-headline text-2xl">Selamat Datang, {user.name || user.email || 'Mahasiswa'}!</CardTitle>
               <CardDescription>Ringkasan performa akademik dan kemajuan belajarmu.</CardDescription>
             </CardHeader>
           </Card>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+            {mahasiswaSummaryCards.map((item, index) => (
+              <Card key={index} className={cn("shadow-md hover:shadow-lg transition-shadow duration-300", item.color)}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium font-headline">{item.title}</CardTitle>
+                  <item.icon className="h-5 w-5 text-white/80" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{item.value}</div>
+                  {item.description && <p className="text-xs text-white/70 pt-1">{item.description}</p>}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
           <Card className="shadow-lg">
             <CardHeader>
@@ -312,11 +347,10 @@ export default function DashboardPage() {
   if (user?.role === 'dosen') {
     return (
       <>
-        {/* AppHeader is now rendered by the layout */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="font-headline text-2xl">Selamat Datang, Dosen {user.email || ''}!</CardTitle>
+              <CardTitle className="font-headline text-2xl">Selamat Datang, Dosen {user.name || user.email || ''}!</CardTitle>
               <CardDescription>Ringkasan aktivitas dan manajemen perkuliahan Anda.</CardDescription>
             </CardHeader>
              <CardContent>
@@ -390,11 +424,10 @@ export default function DashboardPage() {
   // GENERIC/ADMIN DASHBOARD
   return (
     <>
-      {/* AppHeader is now rendered by the layout */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Welcome Back, {user?.email || 'Admin'}!</CardTitle>
+            <CardTitle className="font-headline text-2xl">Welcome Back, {user?.name || user?.email || 'Admin'}!</CardTitle>
             <CardDescription>Overview of the academic information system.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -449,7 +482,6 @@ export default function DashboardPage() {
               <CardDescription>Recent important system events.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Placeholder for activity log items */}
               <p className="text-sm text-muted-foreground">New lecturer account 'prof.budi@example.com' created.</p>
               <p className="text-sm text-muted-foreground">Course 'CS101' details updated.</p>
               <p className="text-sm text-muted-foreground">Password reset requested for 'student.x@example.com'.</p>
@@ -461,3 +493,4 @@ export default function DashboardPage() {
     </>
   );
 }
+
