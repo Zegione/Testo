@@ -17,9 +17,9 @@ import {
   ShieldCheck,
   Archive, 
   ListChecks, 
-  CalendarCheck2, // Added for Schedule
-  Edit3, // Added for KRS
-  CheckSquare, // Added for Attendance
+  CalendarCheck2, 
+  Edit3, 
+  CheckSquare, 
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { UserRole } from "@/contexts/AuthContext"; 
@@ -64,24 +64,24 @@ export const mainNavItems: NavItemConfig[] = [
       { href: "/khs", label: "Resume Nilai", icon: ClipboardList, requiredRole: "mahasiswa" }, 
     ],
   },
-   {
-    href: "/krs",
-    label: "KRS Submission",
-    icon: Edit3,
-    requiredRole: "mahasiswa",
-  },
   {
     href: "/schedule",
     label: "Schedule",
     icon: CalendarCheck2,
-    requiredRole: "all",
+    requiredRole: "all", // Mahasiswa and Dosen can see schedule
   },
-  {
-    href: "/course-recommendations",
-    label: "AI Recommendations",
-    icon: Sparkles,
-    requiredRole: "mahasiswa",
-  },
+  // {
+  //   href: "/krs",
+  //   label: "KRS Submission",
+  //   icon: Edit3,
+  //   requiredRole: "mahasiswa",
+  // },
+  // {
+  //   href: "/course-recommendations",
+  //   label: "AI Recommendations",
+  //   icon: Sparkles,
+  //   requiredRole: "mahasiswa",
+  // },
 ];
 
 export const adminNavItems: NavItemConfig[] = [
@@ -109,4 +109,3 @@ export function Logo() {
     </div>
   );
 }
-

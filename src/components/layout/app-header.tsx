@@ -21,8 +21,8 @@ import {
   SheetContent,
   SheetTrigger,
   SheetClose,
-  SheetHeader, // Keep if used, or remove if only SheetTitle is needed standalone
-  SheetTitle,  // Added for accessibility
+  SheetHeader, 
+  SheetTitle,  
 } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -59,21 +59,26 @@ const getPageTitle = (pathname: string, navItems: NavItemConfig[], adminNavs: Na
         }
       }
       if (item.children) {
+        // Only recurse if the current path could potentially be a child of this item
+        // or if no match has been found yet (to catch deeper nested initial matches)
         if (!longestMatch || (item.href && pathname.startsWith(item.href))) {
            findTitleRecursive(item.children);
         }
       }
     }
   };
-
+  
   findTitleRecursive(allNavs);
   
   if (longestMatch) return title;
   
+  // Fallback title generation if no direct match
   const pathParts = pathname.split('/').filter(Boolean);
-  const lastPart = pathParts.length > 0 ? pathParts[pathParts.length -1] : "App";
+  // Remove the group "(app)" if it's the first part for title generation
+  const relevantPathParts = pathParts[0] === '(app)' ? pathParts.slice(1) : pathParts;
+  const lastPart = relevantPathParts.length > 0 ? relevantPathParts[relevantPathParts.length -1] : "App";
   
-  return lastPart !== "(app)" ? lastPart.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "EduCentral";
+  return lastPart.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
 
@@ -84,14 +89,20 @@ export function AppHeader() {
   
   const filterNavItems = (items: NavItemConfig[]): NavItemConfig[] => {
     return items.filter(item => {
-      if (!user) return false;
+      if (!user) return false; // Should not happen if layout protects route
       if (item.requiredRole === 'all' || !item.requiredRole) return true;
+      // Admin sees all roles
       if (user.role === 'admin' && (item.requiredRole === 'admin' || item.requiredRole === 'dosen' || item.requiredRole === 'mahasiswa')) return true;
+      // Specific role match
       return user.role === item.requiredRole;
     }).map(item => ({
       ...item,
+      // Recursively filter children if they exist
       children: item.children ? filterNavItems(item.children) : undefined,
-    })).filter(item => item.isDropdown ? item.children && item.children.length > 0 : true);
+    })).filter(item => {
+      // If it's a dropdown, ensure it still has children after filtering
+      return item.isDropdown ? item.children && item.children.length > 0 : true;
+    });
   };
   
   const filteredMainNavs = filterNavItems(mainNavItems);
@@ -115,7 +126,7 @@ export function AppHeader() {
   };
 
   const NavLink = ({ href, children, itemIcon: Icon, className: extraClassName, onClick, isSheetLink = false }: { href: string; children: React.ReactNode, itemIcon?: React.ElementType, className?: string, onClick?: () => void, isSheetLink?: boolean }) => {
-    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href)); // Corrected: use href directly
+    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
     
     return (
       <Link
@@ -124,12 +135,12 @@ export function AppHeader() {
         className={cn(
           "flex items-center text-sm transition-colors",
           isSheetLink 
-            ? "px-3 py-2 rounded-md hover:bg-muted" 
-            : "px-3 py-2 hover:text-primary", 
+            ? "px-3 py-2.5 rounded-md hover:bg-muted" // mobile links padding
+            : "px-3 py-2 hover:text-primary", // desktop links padding
           isActive 
             ? (isSheetLink ? "bg-primary/10 text-primary font-semibold" : "text-primary font-semibold") 
-            : (isSheetLink ? "text-foreground" : "text-muted-foreground"), // Adjusted mobile inactive color
-          !isSheetLink && "font-medium", // Ensure desktop links have medium weight by default
+            : (isSheetLink ? "text-foreground" : "text-muted-foreground"),
+          !isSheetLink && "font-medium",
           extraClassName
         )}
       >
@@ -151,7 +162,7 @@ export function AppHeader() {
     }
     return (
        <>
-        <p className="text-sm font-medium leading-none">{user?.email}</p>
+        <p className="text-sm font-medium leading-none truncate" title={user?.email}>{user?.email}</p>
         <p className="text-xs leading-none text-muted-foreground pt-1">{detail}</p>
        </>
     );
@@ -188,6 +199,7 @@ export function AppHeader() {
       const ItemIcon = item.icon;
       if (item.isDropdown && item.children && item.children.length > 0) {
         if (isMobile) {
+          // Mobile: Render as a section with a label, then list child items
           return (
             <div key={item.label} className="pt-2">
               <p className="px-3 py-2 text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center">
@@ -199,7 +211,7 @@ export function AppHeader() {
                      <NavLink 
                         href={child.href} 
                         itemIcon={child.icon} 
-                        className="font-normal" // Use normal font weight for children in mobile
+                        className="font-normal pl-5" // Indent child items
                         onClick={() => setMobileMenuOpen(false)}
                         isSheetLink={true}
                       >
@@ -211,7 +223,7 @@ export function AppHeader() {
             </div>
           );
         }
-        // Desktop Dropdown
+        // Desktop: Render as DropdownMenu
         return (
           <DropdownMenu key={item.label}>
             <DropdownMenuTrigger asChild>
@@ -238,25 +250,17 @@ export function AppHeader() {
         );
       }
       // Regular NavLink for Desktop or specific mobile cases if not dropdown
-      if (item.href && !isMobile) { 
+      if (item.href) { 
         return (
-          <NavLink key={item.href} href={item.href} itemIcon={ItemIcon} isSheetLink={false}>
+          <NavLink 
+            key={`${item.href}-${item.label}`} // Ensure unique key for direct links too
+            href={item.href} 
+            itemIcon={ItemIcon} 
+            onClick={isMobile ? () => setMobileMenuOpen(false) : undefined}
+            isSheetLink={isMobile}
+          >
             {item.label}
           </NavLink>
-        );
-      }
-       if (item.href && isMobile) { 
-        return (
-          <SheetClose asChild key={item.href}>
-            <NavLink 
-              href={item.href} 
-              itemIcon={ItemIcon} 
-              onClick={() => setMobileMenuOpen(false)}
-              isSheetLink={true}
-            >
-              {item.label}
-            </NavLink>
-          </SheetClose>
         );
       }
       return null;
@@ -275,30 +279,30 @@ export function AppHeader() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="flex flex-col p-0 w-[280px]">
-            <SheetTitle className="sr-only">Navigation Menu</SheetTitle> {/* Visually hidden title for accessibility */}
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle> 
             <div className="flex h-16 items-center border-b px-6">
                <SheetClose asChild>
                 <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setMobileMenuOpen(false)}>
                   <BookOpen className="h-6 w-6 text-primary" />
-                  <span>EduCentral</span>
+                  <span className="text-lg">EduCentral</span>
                 </Link>
               </SheetClose>
             </div>
-            <nav className="flex-1 grid gap-1 p-4 text-sm"> {/* Ensure text-sm is applied here too */}
+            <nav className="flex-1 grid gap-1 p-4 text-sm">
               {renderNavItems(allUserNavItems, true)}
             </nav>
             <div className="mt-auto border-t p-4">
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start items-center gap-2 h-auto py-2 px-3">
+                    <Button variant="ghost" className="w-full justify-start items-center gap-2 h-auto py-2 px-3 text-left">
                          <Avatar className="h-9 w-9">
                             <AvatarImage src={user?.photoURL || `https://placehold.co/100x100.png?text=${getInitials(user?.email)}`} alt="User Avatar" data-ai-hint="person" />
                             <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
                         </Avatar>
-                        <div className="flex flex-col items-start text-left">
+                        <div className="flex flex-col items-start overflow-hidden">
                            <UserSpecificInfo />
                         </div>
-                        <ChevronRight className="ml-auto h-4 w-4 opacity-50"/>
+                        <ChevronRight className="ml-auto h-4 w-4 opacity-50 flex-shrink-0"/>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" side="top" sideOffset={10} className="w-64 mb-2">
@@ -315,12 +319,14 @@ export function AppHeader() {
         </Link>
       </div>
 
-      <nav className="hidden flex-col gap-1 md:flex md:flex-row md:items-center md:mx-auto md:gap-0.5 lg:gap-1 text-sm"> {/* Ensure text-sm here too */}
+      <nav className="hidden flex-col gap-1 md:flex md:flex-row md:items-center md:mx-auto md:gap-0.5 lg:gap-1 text-sm">
         {renderNavItems(allUserNavItems, false)}
       </nav>
 
       <div className="flex items-center gap-2 md:gap-4 ml-auto">
-         <h1 className="text-lg font-semibold md:text-xl hidden lg:block mr-2 md:mr-4 whitespace-nowrap">{pageTitle}</h1>
+         <h1 className="text-lg font-semibold md:text-xl hidden lg:block mr-2 md:mr-4 whitespace-nowrap overflow-hidden text-ellipsis" title={pageTitle}>
+           {pageTitle}
+         </h1>
         {initialLoading ? (
             <Avatar className="h-9 w-9">
                  <AvatarFallback>?</AvatarFallback>
@@ -345,14 +351,9 @@ export function AppHeader() {
   );
 }
 
-// This hook is not strictly necessary for the header to set the title itself,
-// but can be kept if pages want to suggest titles for other purposes.
-// For now, getPageTitle within AppHeader handles the dynamic title.
 export function usePageTitle(title: string) {
   useEffect(() => {
-    // console.log("Page suggests title:", title); 
+    // This hook is not strictly necessary for the header to set the title itself,
+    // but can be kept if pages want to suggest titles for other purposes.
   }, [title]);
 }
-
-
-    
