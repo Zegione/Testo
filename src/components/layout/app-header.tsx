@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname, useRouter }
 from "next/navigation";
-import React, { useState, useEffect } from "react"; // Added useEffect
+import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,39 +15,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import {
   Bell,
   Settings,
   LogOut,
-  User,
   Menu,
   BookOpen,
-  LayoutDashboard,
-  Clipboard,
-  FileText,
-  CalendarDays,
-  GraduationCap,
-  Sparkles,
-  ChevronDown,
   ChevronRight,
-  ShieldCheck
 } from "lucide-react";
-import { mainNavItems, adminNavItems, NavItem } from "./sidebar-nav"; 
+import { mainNavItems, adminNavItems, NavItem } from "./sidebar-nav";
 
-// Helper function to extract page title from pathname or use a default
 const getPageTitle = (pathname: string, navItems: NavItem[], adminNavs: NavItem[], userRole?: string): string => {
-  const allNavs = [...navItems, ...adminNavs].filter(Boolean); // Ensure no undefined items
+  const allNavs = [...navItems, ...adminNavs].filter(Boolean);
   
-  // Exact match for homepage first
   if (pathname === "/" || pathname === "/(app)") {
     const dashboardItem = allNavs.find(item => item.href === "/");
     return dashboardItem ? dashboardItem.label : "Dashboard";
   }
 
-  // Find the most specific matching path
   let longestMatch = "";
   let title = "EduCentral";
 
@@ -62,12 +50,10 @@ const getPageTitle = (pathname: string, navItems: NavItem[], adminNavs: NavItem[
   
   if (longestMatch) return title;
 
-  // Fallback titles for common pages not in nav or dynamic ones
   if (pathname.startsWith("/(app)/course-recommendations") || pathname.startsWith("/course-recommendations")) return "AI Course Recommendations";
   
-  // Default or derive from path if no match found
   const pathParts = pathname.split('/').filter(Boolean);
-  const lastPart = pathParts.length > 1 ? pathParts[pathParts.length -1] : (pathParts[0] || "App"); // Avoid using '(app)'
+  const lastPart = pathParts.length > 1 ? pathParts[pathParts.length -1] : (pathParts[0] || "App");
   
   return lastPart !== "(app)" ? lastPart.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "EduCentral";
 };
@@ -77,8 +63,7 @@ export function AppHeader() {
   const { user, logoutUser, loading: authLoading, initialLoading } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const router = useRouter();
-
+  
 
   const filteredMainNavs = mainNavItems.filter(item => {
     if (!item.requiredRole) return true;
@@ -87,7 +72,6 @@ export function AppHeader() {
     if (user.role === 'dosen') { 
         return item.href === "/" || item.href === "/schedule";
     }
-    
     return user.role === item.requiredRole || item.requiredRole === undefined;
   });
 
@@ -95,7 +79,6 @@ export function AppHeader() {
   const allUserNavItems = [...filteredMainNavs, ...filteredAdminNavs];
 
   const pageTitle = getPageTitle(pathname, filteredMainNavs, filteredAdminNavs, user?.role);
-
 
   const getInitials = (email?: string | null) => {
     if (!email) return "??";
@@ -111,21 +94,33 @@ export function AppHeader() {
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
 
-  const NavLink = ({ href, children, itemIcon: Icon, isSheetLink = false }: { href: string; children: React.ReactNode, itemIcon: React.ElementType, isSheetLink?: boolean }) => (
-    <Link
-      href={href}
-      onClick={() => { if (isSheetLink) setMobileMenuOpen(false); }}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-        (pathname === href || (href !== "/" && pathname.startsWith(href))) && "text-primary bg-muted",
-        !isSheetLink && "px-2 py-1 text-sm transition-colors hover:text-foreground", // Desktop specific
-        !isSheetLink && (pathname === href || (href !== "/" && pathname.startsWith(href))) ? "text-foreground font-medium" : !isSheetLink && "text-muted-foreground" // Desktop active/inactive
-      )}
-    >
-      <Icon className="h-4 w-4" />
-      {children}
-    </Link>
-  );
+  const NavLink = ({ href, children, itemIcon: Icon, isSheetLink = false }: { href: string; children: React.ReactNode, itemIcon: React.ElementType, isSheetLink?: boolean }) => {
+    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+    return (
+      <Link
+        href={href}
+        onClick={() => { if (isSheetLink) setMobileMenuOpen(false); }}
+        className={cn(
+          "flex items-center transition-all rounded-lg",
+          // Base styles common to both
+          "gap-3", // Icon and text gap
+  
+          // Desktop specific styles
+          !isSheetLink && "px-2 py-1 text-sm",
+          !isSheetLink && !isActive && "text-muted-foreground hover:text-foreground",
+          !isSheetLink && isActive && "text-primary font-semibold", // Active desktop links
+  
+          // Sheet specific styles
+          isSheetLink && "px-3 py-2 text-sm", 
+          isSheetLink && !isActive && "text-muted-foreground hover:text-primary",
+          isSheetLink && isActive && "text-primary bg-muted font-semibold" // Active sheet links
+        )}
+      >
+        <Icon className="h-4 w-4" />
+        {children}
+      </Link>
+    );
+  };
   
   const UserProfileDropdownItems = () => (
     <>
@@ -173,7 +168,7 @@ export function AppHeader() {
                 <span>EduCentral</span>
               </Link>
             </div>
-            <nav className="flex-1 grid gap-2 p-4 text-sm font-medium">
+            <nav className="flex-1 grid gap-2 p-4 text-sm"> {/* Removed font-medium from here */}
               {allUserNavItems.map((item) => (
                 <NavLink key={item.href} href={item.href} itemIcon={item.icon} isSheetLink={true}>
                   {item.label}
@@ -251,3 +246,4 @@ export function usePageTitle(title: string) {
     // console.log("Page suggests title:", title);
   }, [title]);
 }
+
