@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Settings, LogIn, LogOut, UserPlus, UserCircle } from "lucide-react";
+import { Bell, Settings, LogIn, LogOut, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,7 +24,7 @@ export function AppHeader({ pageTitle }: { pageTitle: string }) {
     if (!email) return "??";
     const parts = email.split("@")[0].split(/[._-]/);
     if (parts.length > 1) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
+      return (parts[0][0] + (parts[1][0] || parts[0][1] || "")).toUpperCase();
     }
     return email.substring(0, 2).toUpperCase();
   };

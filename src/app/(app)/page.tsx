@@ -4,7 +4,7 @@
 import { AppHeader } from "@/components/layout/app-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Bell, BookOpen, CalendarCheck2, TrendingUp, GraduationCap as GraduationCapIcon, LineChart as LineChartIcon, FileText as FileTextIcon } from "lucide-react";
+import { ArrowRight, Bell, BookOpen, CalendarCheck2, TrendingUp, GraduationCap as GraduationCapIcon, LineChart as LineChartIcon, FileText as FileTextIcon, Users, Edit } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import React, { useState, useMemo, useEffect } from 'react';
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend as RechartsLegend, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 // Data KHS (sama seperti di halaman KHS untuk contoh ini)
 const khsData: { [semester: string]: { courseId: string; courseName: string; credits: number; grade: string; score: number }[] } = {
@@ -49,19 +50,27 @@ const chartConfig = {
   IPK: { label: "IPK", color: "hsl(var(--chart-2))" },
 } satisfies ChartConfig;
 
-// Summary cards untuk dashboard generik
-const genericSummaryCards = [
-  { title: "Overall GPA", value: "3.75", icon: TrendingUp, trend: "+0.12 this semester", color: "text-green-500" },
-  { title: "Courses Enrolled", value: "5", icon: BookOpen, trend: "View Details" },
-  { title: "Upcoming Exams", value: "2", icon: CalendarCheck2, trend: "Next: Math IA - 23/07" },
-  { title: "Recent Announcements", value: "3 New", icon: Bell, trend: "Check Announcements" },
+// Summary cards untuk dashboard generik (admin)
+const adminSummaryCards = [
+  { title: "Total Students", value: "1,250", icon: Users, trend: "+50 this month", color: "text-green-500", href: "/admin/students" },
+  { title: "Total Lecturers", value: "85", icon: GraduationCapIcon, trend: "+2 this month", href: "/admin/lecturers"  },
+  { title: "Courses Offered", value: "120", icon: BookOpen, trend: "View All Courses", href: "/admin/courses" },
+  { title: "Pending Approvals", value: "12", icon: Edit, trend: "Review Now", href: "/admin/approvals"},
 ];
+
+// Summary cards untuk dashboard dosen
+const dosenSummaryCards = [
+  { title: "My Courses", value: "3", icon: BookOpen, trend: "View Schedule", href: "/schedule" },
+  { title: "Students Enrolled", value: "78", icon: Users, trend: "Across all courses" },
+  { title: "Upcoming Deadlines", value: "2", icon: CalendarCheck2, trend: "Next: Project Alpha - 30/07" },
+  { title: "Recent Submissions", value: "15 New", icon: FileTextIcon, trend: "Grade Submissions" },
+];
+
 
 export default function DashboardPage() {
   const { user, initialLoading } = useAuth();
   const [selectedSemester, setSelectedSemester] = useState<string>("1");
   
-  // Set selectedSemester to the latest available semester initially if khsData is not empty
   useEffect(() => {
     const semesters = Object.keys(khsData);
     if (semesters.length > 0) {
@@ -259,7 +268,6 @@ export default function DashboardPage() {
                       tickLine={false}
                       axisLine={false}
                       tickMargin={8}
-                      // tickFormatter={(value) => value.slice(0, 3)}
                     />
                     <YAxis
                       tickLine={false}
@@ -294,83 +302,157 @@ export default function DashboardPage() {
               </ChartContainer>
             </CardContent>
           </Card>
-
         </main>
       </>
     );
   }
 
-  // GENERIC DASHBOARD (ADMIN, DOSEN, OR OTHER)
+  // DOSEN DASHBOARD
+  if (user?.role === 'dosen') {
+    return (
+      <>
+        <AppHeader pageTitle="Dashboard Dosen" />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-headline text-2xl">Selamat Datang, Dosen {user.email || ''}!</CardTitle>
+              <CardDescription>Ringkasan aktivitas dan manajemen perkuliahan Anda.</CardDescription>
+            </CardHeader>
+             <CardContent>
+                 <p>Kelola kelas, nilai mahasiswa, dan materi perkuliahan Anda di sini.</p>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {dosenSummaryCards.map((item, index) => (
+              <Card key={index} className="shadow-md hover:shadow-lg transition-shadow duration-300">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium font-headline">{item.title}</CardTitle>
+                  <item.icon className="h-5 w-5 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{item.value}</div>
+                  <p className="text-xs text-muted-foreground pt-1">{item.trend}</p>
+                   {item.href && (
+                    <Button variant="link" size="sm" asChild className="px-0 h-auto mt-1">
+                      <Link href={item.href}>
+                        Lihat Detail <ArrowRight className="ml-1 h-3 w-3" />
+                      </Link>
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          
+           <div className="grid gap-6 md:grid-cols-2">
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle className="font-headline">Akses Cepat</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <CalendarCheck2 className="mr-2 h-4 w-4" /> Lihat Jadwal Mengajar
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <FileTextIcon className="mr-2 h-4 w-4" /> Input Nilai Mahasiswa
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <BookOpen className="mr-2 h-4 w-4" /> Unggah Materi Kuliah
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle className="font-headline">Pengumuman Kampus</CardTitle>
+                <CardDescription>Update dan acara terbaru.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Image src="https://placehold.co/80x80.png" alt="News" width={60} height={60} className="rounded-md" data-ai-hint="campus event" />
+                  <div>
+                    <h3 className="font-semibold">Rapat Dosen Bulanan</h3>
+                    <p className="text-sm text-muted-foreground">Tanggal 5 Agustus, pukul 10:00 di Aula Rektorat.</p>
+                    <Button variant="link" size="sm" className="px-0 h-auto">Info Detail <ArrowRight className="ml-1 h-3 w-3" /></Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+
+  // GENERIC/ADMIN DASHBOARD
   return (
     <>
-      <AppHeader pageTitle="Dashboard" />
+      <AppHeader pageTitle="Dashboard Admin" />
       <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Welcome Back, {user?.email || 'User'}!</CardTitle>
-            <CardDescription>Here's a quick overview of your academic progress and campus activities.</CardDescription>
+            <CardTitle className="font-headline text-2xl">Welcome Back, {user?.email || 'Admin'}!</CardTitle>
+            <CardDescription>Overview of the academic information system.</CardDescription>
           </CardHeader>
           <CardContent>
-            <p>Stay updated with your courses, schedules, and grades. Use the sidebar to navigate to different sections.</p>
+            <p>Manage users, courses, and system settings from here.</p>
             {user?.role && <p className="mt-2 text-sm text-muted-foreground">Logged in as: <span className="font-semibold capitalize">{user.role}</span></p>}
           </CardContent>
         </Card>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {genericSummaryCards.map((item, index) => (
-            <Card key={index} className="shadow-md hover:shadow-lg transition-shadow duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium font-headline">{item.title}</CardTitle>
-                <item.icon className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{item.value}</div>
-                <p className="text-xs text-muted-foreground pt-1">{item.trend}</p>
-              </CardContent>
-            </Card>
+          {adminSummaryCards.map((item, index) => (
+             <Card key={index} className="shadow-md hover:shadow-lg transition-shadow duration-300">
+             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+               <CardTitle className="text-sm font-medium font-headline">{item.title}</CardTitle>
+               <item.icon className="h-5 w-5 text-muted-foreground" />
+             </CardHeader>
+             <CardContent>
+               <div className="text-2xl font-bold">{item.value}</div>
+               <p className="text-xs text-muted-foreground pt-1">{item.trend}</p>
+                {item.href && (
+                <Button variant="link" size="sm" asChild className="px-0 h-auto mt-1">
+                  <Link href={item.href}>
+                    Manage <ArrowRight className="ml-1 h-3 w-3" />
+                  </Link>
+                </Button>
+                )}
+             </CardContent>
+           </Card>
           ))}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle className="font-headline">Quick Links</CardTitle>
+              <CardTitle className="font-headline">Quick Admin Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button variant="outline" className="w-full justify-start">
-                <CalendarCheck2 className="mr-2 h-4 w-4" /> View Full Schedule
+                <Users className="mr-2 h-4 w-4" /> Manage Users (Dosen/Mahasiswa)
               </Button>
               <Button variant="outline" className="w-full justify-start">
-                <FileTextIcon className="mr-2 h-4 w-4" /> Submit Assignments
+                <BookOpen className="mr-2 h-4 w-4" /> Manage Courses
               </Button>
               <Button variant="outline" className="w-full justify-start">
-                <GraduationCapIcon className="mr-2 h-4 w-4" /> Check Grades
+                <Bell className="mr-2 h-4 w-4" /> Send System Announcement
               </Button>
             </CardContent>
           </Card>
 
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle className="font-headline">Campus News</CardTitle>
-              <CardDescription>Latest updates and events.</CardDescription>
+              <CardTitle className="font-headline">System Activity Log</CardTitle>
+              <CardDescription>Recent important system events.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Image src="https://placehold.co/80x80.png" alt="News" width={60} height={60} className="rounded-md" data-ai-hint="campus event" />
-                <div>
-                  <h3 className="font-semibold">New Library Wing Opening</h3>
-                  <p className="text-sm text-muted-foreground">Join us for the grand opening on August 1st!</p>
-                  <Button variant="link" size="sm" className="px-0 h-auto">Read More <ArrowRight className="ml-1 h-3 w-3" /></Button>
-                </div>
-              </div>
-               <div className="flex items-start gap-3">
-                <Image src="https://placehold.co/80x80.png" alt="Workshop" width={60} height={60} className="rounded-md" data-ai-hint="students workshop" />
-                <div>
-                  <h3 className="font-semibold">AI Workshop Next Week</h3>
-                  <p className="text-sm text-muted-foreground">Limited spots available. Register now!</p>
-                  <Button variant="link" size="sm" className="px-0 h-auto">Register <ArrowRight className="ml-1 h-3 w-3" /></Button>
-                </div>
-              </div>
+              {/* Placeholder for activity log items */}
+              <p className="text-sm text-muted-foreground">New lecturer account 'prof.budi@example.com' created.</p>
+              <p className="text-sm text-muted-foreground">Course 'CS101' details updated.</p>
+              <p className="text-sm text-muted-foreground">Password reset requested for 'student.x@example.com'.</p>
+               <Button variant="link" size="sm" className="px-0 h-auto">View Full Log <ArrowRight className="ml-1 h-3 w-3" /></Button>
             </CardContent>
           </Card>
         </div>
@@ -378,4 +460,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
