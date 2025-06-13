@@ -110,7 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Dosen can log in as dosen or mahasiswa.
         // Mahasiswa can only log in as mahasiswa.
         else if (loginAsRole === 'dosen' && userActualRole === 'mahasiswa') {
-          validationError = `Your account role (${userActualRole}) does not match the selected login role (${loginAsRole}).`;
+           validationError = `Your account role (${userActualRole}) does not match the selected login role (${loginAsRole}).`;
         }
 
 
@@ -130,7 +130,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         const firestoreError = 'User data not found in Firestore. Please contact support.';
         setError(firestoreError);
-        console.error("Login error (Firestore data missing):", firestoreError);
+        console.warn("Login error (Firestore data missing):", firestoreError); // Changed to console.warn
         if (auth.currentUser) {
           await firebaseSignOut(auth);
         }
@@ -149,8 +149,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       ];
 
       if (e.code && knownFirebaseAuthErrorCodes.includes(e.code)) {
+         // For common auth errors, just set the error for the toast, don't console.error
         setError(e.message || 'Login failed. Please check your credentials.');
       } else {
+        // For other unexpected errors, do console.error
         setError(e.message || 'An unexpected error occurred during login.');
         console.error("Login error (unexpected or non-auth Firebase error):", e);
       }
