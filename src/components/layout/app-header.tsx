@@ -16,7 +16,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetClose,
+  SheetHeader, // Keep if used, or remove if only SheetTitle is needed standalone
+  SheetTitle,  // Added for accessibility
+} from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import {
@@ -52,8 +59,6 @@ const getPageTitle = (pathname: string, navItems: NavItemConfig[], adminNavs: Na
         }
       }
       if (item.children) {
-        // Check children only if the parent is a potential candidate or if we haven't found a match yet
-        // This prevents deeply nested children from overriding a more specific parent match
         if (!longestMatch || (item.href && pathname.startsWith(item.href))) {
            findTitleRecursive(item.children);
         }
@@ -110,7 +115,7 @@ export function AppHeader() {
   };
 
   const NavLink = ({ href, children, itemIcon: Icon, className: extraClassName, onClick, isSheetLink = false }: { href: string; children: React.ReactNode, itemIcon?: React.ElementType, className?: string, onClick?: () => void, isSheetLink?: boolean }) => {
-    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href)); // Corrected: use href directly
     
     return (
       <Link
@@ -119,12 +124,12 @@ export function AppHeader() {
         className={cn(
           "flex items-center text-sm transition-colors",
           isSheetLink 
-            ? "px-3 py-2 rounded-md hover:bg-muted" // Mobile sheet link styling
-            : "px-3 py-2 hover:text-primary", // Desktop link styling
+            ? "px-3 py-2 rounded-md hover:bg-muted" 
+            : "px-3 py-2 hover:text-primary", 
           isActive 
             ? (isSheetLink ? "bg-primary/10 text-primary font-semibold" : "text-primary font-semibold") 
-            : "text-muted-foreground"
-          ,
+            : (isSheetLink ? "text-foreground" : "text-muted-foreground"), // Adjusted mobile inactive color
+          !isSheetLink && "font-medium", // Ensure desktop links have medium weight by default
           extraClassName
         )}
       >
@@ -138,9 +143,11 @@ export function AppHeader() {
     if (!user) return null;
     let detail = `Role: ${capitalizeFirstLetter(user.role)}`;
     if (user.role === 'mahasiswa') {
-      detail = `NIM: ${user.nim || user.email?.split('@')[0] || 'N/A'}`;
+      // Placeholder for NIM - replace with actual data when available
+      detail = `NIM: ${user.email?.split('@')[0] || 'N/A'}`; 
     } else if (user.role === 'dosen') {
-      detail = `NIP: ${user.nip || user.email?.split('@')[0] || 'N/A'}`;
+      // Placeholder for NIP - replace with actual data when available
+      detail = `NIP: ${user.email?.split('@')[0] || 'N/A'}`;
     }
     return (
        <>
@@ -158,15 +165,17 @@ export function AppHeader() {
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
-      <DropdownMenuItem className="cursor-pointer">
-        <Bell className="mr-2 h-4 w-4" />
-        <span>Notifications</span>
-      </DropdownMenuItem>
-      <DropdownMenuItem className="cursor-pointer">
-        <Settings className="mr-2 h-4 w-4" />
-        <span>Settings</span>
-      </DropdownMenuItem>
-      <DropdownMenuSeparator />
+      {/* 
+        <DropdownMenuItem className="cursor-pointer">
+          <Bell className="mr-2 h-4 w-4" />
+          <span>Notifications</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer">
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator /> 
+      */}
       <DropdownMenuItem onClick={logoutUser} disabled={authLoading} className="cursor-pointer">
         <LogOut className="mr-2 h-4 w-4" />
         <span>Logout</span>
@@ -190,7 +199,7 @@ export function AppHeader() {
                      <NavLink 
                         href={child.href} 
                         itemIcon={child.icon} 
-                        className="font-normal"
+                        className="font-normal" // Use normal font weight for children in mobile
                         onClick={() => setMobileMenuOpen(false)}
                         isSheetLink={true}
                       >
@@ -266,6 +275,7 @@ export function AppHeader() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="flex flex-col p-0 w-[280px]">
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle> {/* Visually hidden title for accessibility */}
             <div className="flex h-16 items-center border-b px-6">
                <SheetClose asChild>
                 <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setMobileMenuOpen(false)}>
@@ -274,7 +284,7 @@ export function AppHeader() {
                 </Link>
               </SheetClose>
             </div>
-            <nav className="flex-1 grid gap-1 p-4 text-sm font-medium">
+            <nav className="flex-1 grid gap-1 p-4 text-sm"> {/* Ensure text-sm is applied here too */}
               {renderNavItems(allUserNavItems, true)}
             </nav>
             <div className="mt-auto border-t p-4">
@@ -305,7 +315,7 @@ export function AppHeader() {
         </Link>
       </div>
 
-      <nav className="hidden flex-col gap-1 md:flex md:flex-row md:items-center md:mx-auto md:gap-0.5 lg:gap-1">
+      <nav className="hidden flex-col gap-1 md:flex md:flex-row md:items-center md:mx-auto md:gap-0.5 lg:gap-1 text-sm"> {/* Ensure text-sm here too */}
         {renderNavItems(allUserNavItems, false)}
       </nav>
 
@@ -343,3 +353,6 @@ export function usePageTitle(title: string) {
     // console.log("Page suggests title:", title); 
   }, [title]);
 }
+
+
+    
