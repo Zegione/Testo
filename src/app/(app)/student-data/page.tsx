@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } from "@/components/ui/label"; // Generic Label
 import { Textarea } from "@/components/ui/textarea";
 import { Download, Printer, Edit3, Save, XCircle, UploadCloud, Loader2 } from "lucide-react";
 import Image from "next/image";
@@ -14,9 +14,12 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; // Form-specific components
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, updateUserDocument, AppUser } from "@/hooks/useAuth"; // updateUserDocument might be in AuthContext directly
+import { useAuth, AppUser } from "@/hooks/useAuth"; 
+import { updateUserDocument } from "@/contexts/AuthContext";
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'; // Import serverTimestamp and other firestore functions
+import { db } from '@/lib/firebase'; // Import db instance
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Default values if data is not available from Firestore
@@ -65,7 +68,7 @@ export default function StudentDataPage() {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      email: user?.email || "", // Will be updated by useEffect
+      email: user?.email || "", 
       name: "",
       studentId: "",
       faculty: "",
@@ -78,13 +81,12 @@ export default function StudentDataPage() {
   useEffect(() => {
     if (!authInitialLoading && user) {
       setIsLoadingData(true);
-      // Data from AuthContext (already fetched from Firestore)
       const userDataFromAuth: PageStateProfileData = {
         name: user.name || initialStudentDataBaseDefaults.name,
         studentId: user.studentId || initialStudentDataBaseDefaults.studentId,
         faculty: user.faculty || initialStudentDataBaseDefaults.faculty,
         major: user.major || initialStudentDataBaseDefaults.major,
-        email: user.email!, // Email is always from auth
+        email: user.email!, 
         phone: user.phone || "",
         address: user.address || "",
         avatarUrl: user.avatarUrl || initialStudentDataBaseDefaults.avatarUrl,
@@ -92,20 +94,17 @@ export default function StudentDataPage() {
         stijazahUrl: user.stijazahUrl || initialStudentDataBaseDefaults.stijazahUrl,
       };
       setPageProfileData(userDataFromAuth);
-      form.reset(userDataFromAuth); // Reset form with fetched data
+      form.reset(userDataFromAuth); 
       setAvatarPreview(userDataFromAuth.avatarUrl || initialStudentDataBaseDefaults.avatarUrl);
       setIsLoadingData(false);
     } else if (!authInitialLoading && !user) {
-        // Handle user logged out or session expired
         setIsLoadingData(false);
-        setPageProfileData(null); // Or redirect, depending on desired behavior
+        setPageProfileData(null); 
     }
   }, [user, authInitialLoading, form]);
 
 
   useEffect(() => {
-    // This effect ensures the form is reset correctly when toggling edit mode
-    // or when profileData from auth context updates.
     if (pageProfileData) {
       form.reset(pageProfileData);
       setAvatarPreview(pageProfileData.avatarUrl || initialStudentDataBaseDefaults.avatarUrl);
@@ -115,7 +114,7 @@ export default function StudentDataPage() {
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      if (file.size > 2 * 1024 * 1024) { 
         toast({
           title: "File terlalu besar",
           description: "Ukuran gambar avatar sebaiknya kurang dari 2MB.",
@@ -138,27 +137,21 @@ export default function StudentDataPage() {
     }
     setIsSaving(true);
     
-    // Construct data to save, ensuring email is not part of the update if it's from auth
     const dataToSave: Partial<AppUser> = {
       name: data.name,
-      studentId: data.studentId, // This is NIM for students
+      studentId: data.studentId, 
       faculty: data.faculty,
       major: data.major,
       phone: data.phone,
       address: data.address,
       avatarUrl: avatarPreview, 
-      // email is not updated from here; it's managed by Firebase Auth
     };
 
     try {
-      // Use the updateUserDocument helper from AuthContext or define locally
       const userDocRef = doc(db, 'users', user.uid);
       await updateDoc(userDocRef, {...dataToSave, updatedAt: serverTimestamp()});
       
-      await refreshUser(); // Refresh user data in AuthContext
-
-      // Update local page state after successful save & refresh
-      // This will be handled by the useEffect listening to `user` from AuthContext
+      await refreshUser(); 
 
       setIsEditing(false);
       toast({ title: "Profil Diperbarui", description: "Informasi Anda berhasil disimpan." });
@@ -172,7 +165,6 @@ export default function StudentDataPage() {
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Form reset is handled by useEffect listening to isEditing and pageProfileData
   };
 
   if (authInitialLoading || isLoadingData || !pageProfileData) { 
@@ -197,13 +189,13 @@ export default function StudentDataPage() {
                 </div>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-6 pt-6 border-t">
-                <FormItem><FormLabel>Email</FormLabel><Skeleton className="h-10 w-full rounded" /></FormItem>
-                <FormItem><FormLabel>Telepon</FormLabel><Skeleton className="h-10 w-full rounded" /></FormItem>
-                <FormItem><FormLabel>Nama Lengkap</FormLabel><Skeleton className="h-10 w-full rounded" /></FormItem>
-                <FormItem><FormLabel>NIM</FormLabel><Skeleton className="h-10 w-full rounded" /></FormItem>
-                <FormItem><FormLabel>Fakultas</FormLabel><Skeleton className="h-10 w-full rounded" /></FormItem>
-                <FormItem><FormLabel>Program Studi</FormLabel><Skeleton className="h-10 w-full rounded" /></FormItem>
-                <FormItem className="md:col-span-2"><FormLabel>Alamat</FormLabel><Skeleton className="h-20 w-full rounded" /></FormItem>
+                <div className="space-y-1"><Label>Email</Label><Skeleton className="h-10 w-full rounded" /></div>
+                <div className="space-y-1"><Label>Telepon</Label><Skeleton className="h-10 w-full rounded" /></div>
+                <div className="space-y-1"><Label>Nama Lengkap</Label><Skeleton className="h-10 w-full rounded" /></div>
+                <div className="space-y-1"><Label>NIM</Label><Skeleton className="h-10 w-full rounded" /></div>
+                <div className="space-y-1"><Label>Fakultas</Label><Skeleton className="h-10 w-full rounded" /></div>
+                <div className="space-y-1"><Label>Program Studi</Label><Skeleton className="h-10 w-full rounded" /></div>
+                <div className="md:col-span-2 space-y-1"><Label>Alamat</Label><Skeleton className="h-20 w-full rounded" /></div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -373,27 +365,27 @@ export default function StudentDataPage() {
                         </FormItem>
                       )}
                     />
-                    {!isEditing && ( // These fields are part of the header when not editing
+                    {!isEditing && ( 
                         <>
                          <FormItem>
-                            <FormLabel>Nama Lengkap</FormLabel>
+                            <Label>Nama Lengkap</Label>
                             <p className="text-sm font-medium py-2 min-h-[40px] flex items-center">{pageProfileData.name}</p>
                          </FormItem>
                          <FormItem>
-                            <FormLabel>NIM</FormLabel>
+                            <Label>NIM</Label>
                             <p className="text-sm font-medium py-2 min-h-[40px] flex items-center">{pageProfileData.studentId}</p>
                          </FormItem>
                          <FormItem>
-                            <FormLabel>Fakultas</FormLabel>
+                            <Label>Fakultas</Label>
                             <p className="text-sm font-medium py-2 min-h-[40px] flex items-center">{pageProfileData.faculty || '-'}</p>
                          </FormItem>
                           <FormItem>
-                            <FormLabel>Program Studi</FormLabel>
+                            <Label>Program Studi</Label>
                             <p className="text-sm font-medium py-2 min-h-[40px] flex items-center">{pageProfileData.major || '-'}</p>
                          </FormItem>
                         </>
                     )}
-                     {isEditing && ( // Show these as inputs only in edit mode, they are already in the header section
+                     {isEditing && ( 
                         <>
                         <FormField
                             control={form.control}
@@ -486,3 +478,4 @@ export default function StudentDataPage() {
     </>
   );
 }
+
