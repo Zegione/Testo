@@ -68,20 +68,8 @@ export const mainNavItems: NavItemConfig[] = [
     href: "/schedule",
     label: "Schedule",
     icon: CalendarCheck2,
-    requiredRole: "all", // Mahasiswa and Dosen can see schedule
+    requiredRole: "all", 
   },
-  // {
-  //   href: "/krs",
-  //   label: "KRS Submission",
-  //   icon: Edit3,
-  //   requiredRole: "mahasiswa",
-  // },
-  // {
-  //   href: "/course-recommendations",
-  //   label: "AI Recommendations",
-  //   icon: Sparkles,
-  //   requiredRole: "mahasiswa",
-  // },
 ];
 
 export const adminNavItems: NavItemConfig[] = [
@@ -105,7 +93,7 @@ export function Logo() {
   return (
     <div className="flex items-center gap-2 px-3 py-4">
       <BookOpen className="h-7 w-7 text-primary" /> 
-      <span className="text-xl font-semibold text-foreground font-headline">EduCentral</span>
+      <span className="text-xl font-semibold text-foreground font-headline">MySiakad</span>
     </div>
   );
 }

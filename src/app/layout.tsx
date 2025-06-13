@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'EduCentral',
+  title: 'MySiakad',
   description: 'Academic Information System by Firebase Studio',
 };
 

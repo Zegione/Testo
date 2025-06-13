@@ -34,6 +34,8 @@ import {
   BookOpen,
   ChevronRight,
   ChevronDown,
+  User,
+  GraduationCap
 } from "lucide-react";
 import { mainNavItems, adminNavItems, type NavItemConfig } from "./sidebar-nav";
 
@@ -48,7 +50,7 @@ const getPageTitle = (pathname: string, navItems: NavItemConfig[], adminNavs: Na
   }
 
   let longestMatch = "";
-  let title = "EduCentral";
+  let title = "MySiakad"; // Default title
 
   const findTitleRecursive = (items: NavItemConfig[]) => {
     for (const item of items) {
@@ -89,18 +91,14 @@ export function AppHeader() {
   
   const filterNavItems = (items: NavItemConfig[]): NavItemConfig[] => {
     return items.filter(item => {
-      if (!user) return false; // Should not happen if layout protects route
+      if (!user) return false; 
       if (item.requiredRole === 'all' || !item.requiredRole) return true;
-      // Admin sees all roles
       if (user.role === 'admin' && (item.requiredRole === 'admin' || item.requiredRole === 'dosen' || item.requiredRole === 'mahasiswa')) return true;
-      // Specific role match
       return user.role === item.requiredRole;
     }).map(item => ({
       ...item,
-      // Recursively filter children if they exist
       children: item.children ? filterNavItems(item.children) : undefined,
     })).filter(item => {
-      // If it's a dropdown, ensure it still has children after filtering
       return item.isDropdown ? item.children && item.children.length > 0 : true;
     });
   };
@@ -126,7 +124,7 @@ export function AppHeader() {
   };
 
   const NavLink = ({ href, children, itemIcon: Icon, className: extraClassName, onClick, isSheetLink = false }: { href: string; children: React.ReactNode, itemIcon?: React.ElementType, className?: string, onClick?: () => void, isSheetLink?: boolean }) => {
-    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href)); // Corrected active check
     
     return (
       <Link
@@ -135,8 +133,8 @@ export function AppHeader() {
         className={cn(
           "flex items-center text-sm transition-colors",
           isSheetLink 
-            ? "px-3 py-2.5 rounded-md hover:bg-muted" // mobile links padding
-            : "px-3 py-2 hover:text-primary", // desktop links padding
+            ? "px-3 py-2.5 rounded-md hover:bg-muted" 
+            : "px-3 py-2 hover:text-primary", 
           isActive 
             ? (isSheetLink ? "bg-primary/10 text-primary font-semibold" : "text-primary font-semibold") 
             : (isSheetLink ? "text-foreground" : "text-muted-foreground"),
@@ -152,18 +150,25 @@ export function AppHeader() {
   
   const UserSpecificInfo = () => {
     if (!user) return null;
-    let detail = `Role: ${capitalizeFirstLetter(user.role)}`;
+    let detailPrefix = "";
+    let detailValue = capitalizeFirstLetter(user.role);
+
     if (user.role === 'mahasiswa') {
-      // Placeholder for NIM - replace with actual data when available
-      detail = `NIM: ${user.email?.split('@')[0] || 'N/A'}`; 
+      detailPrefix = "NIM:";
+      // @ts-ignore // Assuming user object might have nim, will be undefined if not
+      detailValue = user.nim || user.email?.split('@')[0] || 'N/A';
     } else if (user.role === 'dosen') {
-      // Placeholder for NIP - replace with actual data when available
-      detail = `NIP: ${user.email?.split('@')[0] || 'N/A'}`;
+      detailPrefix = "NIP:";
+       // @ts-ignore // Assuming user object might have nip, will be undefined if not
+      detailValue = user.nip || user.email?.split('@')[0] || 'N/A';
     }
     return (
        <>
         <p className="text-sm font-medium leading-none truncate" title={user?.email}>{user?.email}</p>
-        <p className="text-xs leading-none text-muted-foreground pt-1">{detail}</p>
+        <p className="text-xs leading-none text-muted-foreground pt-1">
+          {detailPrefix && <span className="mr-1">{detailPrefix}</span>}
+          {detailValue}
+        </p>
        </>
     );
   };
@@ -176,7 +181,7 @@ export function AppHeader() {
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
-      {/* 
+       {/* 
         <DropdownMenuItem className="cursor-pointer">
           <Bell className="mr-2 h-4 w-4" />
           <span>Notifications</span>
@@ -197,11 +202,13 @@ export function AppHeader() {
   const renderNavItems = (items: NavItemConfig[], isMobile: boolean) => {
     return items.map((item) => {
       const ItemIcon = item.icon;
+      const key = `${item.href || item.label}-${item.label}`; // Ensure unique key for items, especially dropdowns
+
       if (item.isDropdown && item.children && item.children.length > 0) {
         if (isMobile) {
           // Mobile: Render as a section with a label, then list child items
           return (
-            <div key={item.label} className="pt-2">
+            <div key={key} className="pt-2">
               <p className="px-3 py-2 text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center">
                 {ItemIcon && <ItemIcon className="mr-2 h-4 w-4" />} {item.label}
               </p>
@@ -225,7 +232,7 @@ export function AppHeader() {
         }
         // Desktop: Render as DropdownMenu
         return (
-          <DropdownMenu key={item.label}>
+          <DropdownMenu key={key}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-primary px-3 py-2 data-[state=open]:text-primary data-[state=open]:bg-muted">
                 {ItemIcon && <ItemIcon className="mr-2 h-4 w-4" />}
@@ -253,7 +260,7 @@ export function AppHeader() {
       if (item.href) { 
         return (
           <NavLink 
-            key={`${item.href}-${item.label}`} // Ensure unique key for direct links too
+            key={key} 
             href={item.href} 
             itemIcon={ItemIcon} 
             onClick={isMobile ? () => setMobileMenuOpen(false) : undefined}
@@ -284,7 +291,7 @@ export function AppHeader() {
                <SheetClose asChild>
                 <Link href="/" className="flex items-center gap-2 font-semibold" onClick={() => setMobileMenuOpen(false)}>
                   <BookOpen className="h-6 w-6 text-primary" />
-                  <span className="text-lg">EduCentral</span>
+                  <span className="text-lg">MySiakad</span>
                 </Link>
               </SheetClose>
             </div>
@@ -315,7 +322,7 @@ export function AppHeader() {
         
         <Link href="/" className="hidden items-center gap-2 md:flex">
           <BookOpen className="h-6 w-6 text-primary" />
-          <span className="text-lg font-semibold">EduCentral</span>
+          <span className="text-lg font-semibold">MySiakad</span>
         </Link>
       </div>
 

@@ -11,7 +11,7 @@ export default function AuthLayout({
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 flex justify-center">
-           <Image src="https://placehold.co/150x50.png?text=EduCentral" alt="EduCentral Logo" width={150} height={50} data-ai-hint="logo education" />
+           <Image src="https://placehold.co/150x50.png?text=MySiakad" alt="MySiakad Logo" width={150} height={50} data-ai-hint="logo education" />
         </div>
         {children}
       </div>
