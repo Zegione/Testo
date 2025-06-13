@@ -15,6 +15,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { usePageTitle } from "@/components/layout/app-header"; 
+import { cn } from "@/lib/utils"; // Import cn
 
 // Data KHS (sama seperti di halaman KHS untuk contoh ini)
 const khsData: { [semester: string]: { courseId: string; courseName: string; credits: number; grade: string; score: number }[] } = {
@@ -493,4 +494,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
