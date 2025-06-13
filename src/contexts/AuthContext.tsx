@@ -46,7 +46,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userData = userDocSnap.data();
           setUser({ ...firebaseUser, role: userData.role as UserRole });
         } else {
-          // This case might happen if user doc creation failed or was deleted
           setUser({ ...firebaseUser, role: undefined });
         }
       } else {
@@ -65,12 +64,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       const firebaseUser = userCredential.user;
-      // Store additional user info in Firestore
       const userDocRef = doc(db, 'users', firebaseUser.uid);
       await setDoc(userDocRef, {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        role: 'mahasiswa', // Default role
+        role: 'mahasiswa', 
         createdAt: serverTimestamp(),
       });
       setUser({ ...firebaseUser, role: 'mahasiswa' });
@@ -96,27 +94,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
         const userActualRole = userData.role as UserRole;
+        
+        let validationError: string | null = null;
 
         if (loginAsRole === 'admin' && userActualRole !== 'admin') {
-            throw new Error(`You do not have permission to log in as Admin.`);
+          validationError = `You do not have permission to log in as Admin.`;
+        } else if (loginAsRole === 'dosen' && userActualRole === 'mahasiswa') {
+          validationError = `Your account role (${userActualRole}) does not match the selected login role (${loginAsRole}).`;
         }
-        // For Mahasiswa or Dosen, they must have AT LEAST that role.
-        // An admin can log in as dosen or mahasiswa if they choose.
-        // A dosen can log in as mahasiswa if they choose.
-        if ((loginAsRole === 'dosen' && userActualRole === 'mahasiswa')) {
-             throw new Error(`Your account role (${userActualRole}) does not match the selected login role (${loginAsRole}).`);
+
+        if (validationError) {
+          setError(validationError);
+          // console.warn("Login validation failed:", validationError); // Optional: for debugging handled validations
+          if (auth.currentUser) { 
+            await firebaseSignOut(auth);
+          }
+          setUser(null);
+          return; // Exit after setting error for validation, finally block will still run
         }
-         setUser({ ...firebaseUser, role: userActualRole }); // Set user with their actual stored role
-         router.push('/');
+
+        setUser({ ...firebaseUser, role: userActualRole });
+        router.push('/');
       } else {
-        // Should not happen if registration creates user doc
-        await firebaseSignOut(auth);
-        throw new Error('User data not found. Please contact support.');
+        const firestoreError = 'User data not found. Please contact support.';
+        setError(firestoreError);
+        console.error("Login error (Firestore data missing):", firestoreError);
+        if (auth.currentUser) {
+          await firebaseSignOut(auth);
+        }
+        setUser(null);
+        return; // Exit, finally block will still run
       }
-    } catch (e: any) {
+    } catch (e: any) { // Catches Firebase auth errors or other unexpected errors
       setError(e.message);
-      console.error("Login error:", e);
-      // Ensure user is signed out if role check fails after Firebase auth success
+      console.error("Login error (auth or unexpected):", e);
       if (auth.currentUser) {
         await firebaseSignOut(auth);
       }
