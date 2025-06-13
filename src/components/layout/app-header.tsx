@@ -50,33 +50,29 @@ const getPageTitle = (pathname: string, navItems: NavItemConfig[], adminNavs: Na
   }
 
   let longestMatch = "";
-  let title = "MySiakad"; // Default title
+  let title = "MySiakad"; 
 
-  const findTitleRecursive = (items: NavItemConfig[]) => {
+  const findTitleRecursive = (items: NavItemConfig[], currentPath: string) => {
     for (const item of items) {
-      if (item.href && item.href !== "/" && pathname.startsWith(item.href)) {
+      if (item.href && item.href !== "/" && currentPath.startsWith(item.href)) {
         if (item.href.length > longestMatch.length) {
           longestMatch = item.href;
           title = item.label;
         }
       }
       if (item.children) {
-        // Only recurse if the current path could potentially be a child of this item
-        // or if no match has been found yet (to catch deeper nested initial matches)
-        if (!longestMatch || (item.href && pathname.startsWith(item.href))) {
-           findTitleRecursive(item.children);
+        if (!longestMatch || (item.href && currentPath.startsWith(item.href))) {
+           findTitleRecursive(item.children, currentPath);
         }
       }
     }
   };
   
-  findTitleRecursive(allNavs);
+  findTitleRecursive(allNavs, pathname);
   
   if (longestMatch) return title;
   
-  // Fallback title generation if no direct match
   const pathParts = pathname.split('/').filter(Boolean);
-  // Remove the group "(app)" if it's the first part for title generation
   const relevantPathParts = pathParts[0] === '(app)' ? pathParts.slice(1) : pathParts;
   const lastPart = relevantPathParts.length > 0 ? relevantPathParts[relevantPathParts.length -1] : "App";
   
@@ -90,8 +86,8 @@ export function AppHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const filterNavItems = (items: NavItemConfig[]): NavItemConfig[] => {
+    if (!user) return [];
     return items.filter(item => {
-      if (!user) return false; 
       if (item.requiredRole === 'all' || !item.requiredRole) return true;
       if (user.role === 'admin' && (item.requiredRole === 'admin' || item.requiredRole === 'dosen' || item.requiredRole === 'mahasiswa')) return true;
       return user.role === item.requiredRole;
@@ -99,6 +95,8 @@ export function AppHeader() {
       ...item,
       children: item.children ? filterNavItems(item.children) : undefined,
     })).filter(item => {
+      // If it's a dropdown, ensure it has children after filtering.
+      // Otherwise, keep it.
       return item.isDropdown ? item.children && item.children.length > 0 : true;
     });
   };
@@ -109,22 +107,26 @@ export function AppHeader() {
 
   const pageTitle = getPageTitle(pathname, filteredMainNavs, filteredAdminNavs, user?.role);
 
-  const getInitials = (email?: string | null) => {
-    if (!email) return "??";
-    const parts = email.split("@")[0].split(/[._-]/);
-    if (parts.length > 1) {
-      return (parts[0][0] + (parts[1][0] || parts[0][1] || "")).toUpperCase();
+  const getInitials = (name?: string | null, email?: string | null) => {
+    if (name) {
+      const nameParts = name.split(' ').filter(Boolean);
+      if (nameParts.length > 1) {
+        return (nameParts[0][0] + (nameParts[1][0] || nameParts[0][1] || "")).toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
     }
-    return email.substring(0, 2).toUpperCase();
-  };
-
-  const capitalizeFirstLetter = (string?: string) => {
-    if (!string) return "";
-    return string.charAt(0).toUpperCase() + string.slice(1);
+    if (email) {
+      const emailParts = email.split("@")[0].split(/[._-]/);
+      if (emailParts.length > 1) {
+        return (emailParts[0][0] + (emailParts[1][0] || emailParts[0][1] || "")).toUpperCase();
+      }
+      return email.substring(0, 2).toUpperCase();
+    }
+    return "??";
   };
 
   const NavLink = ({ href, children, itemIcon: Icon, className: extraClassName, onClick, isSheetLink = false }: { href: string; children: React.ReactNode, itemIcon?: React.ElementType, className?: string, onClick?: () => void, isSheetLink?: boolean }) => {
-    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href)); // Corrected active check
+    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
     
     return (
       <Link
@@ -133,16 +135,14 @@ export function AppHeader() {
         className={cn(
           "flex items-center text-sm transition-colors",
           isSheetLink 
-            ? "px-3 py-2.5 rounded-md hover:bg-muted" 
-            : "px-3 py-2 hover:text-primary", 
-          isActive 
-            ? (isSheetLink ? "bg-primary/10 text-primary font-semibold" : "text-primary font-semibold") 
-            : (isSheetLink ? "text-foreground" : "text-muted-foreground"),
-          !isSheetLink && "font-medium",
+            ? "px-3 py-2.5 rounded-md hover:bg-muted text-foreground"  // Mobile sheet links
+            : "px-3 py-2 hover:text-primary text-muted-foreground font-medium", // Desktop links
+          isActive && isSheetLink && "bg-primary/10 text-primary font-semibold", // Active mobile
+          isActive && !isSheetLink && "text-primary font-semibold", // Active desktop
           extraClassName
         )}
       >
-        {Icon && <Icon className={cn("mr-2 h-4 w-4", isActive && isSheetLink && "text-primary")} />}
+        {Icon && <Icon className={cn("mr-2 h-4 w-4", isActive && "text-primary")} />}
         {children}
       </Link>
     );
@@ -150,25 +150,22 @@ export function AppHeader() {
   
   const UserSpecificInfo = () => {
     if (!user) return null;
-    let detailPrefix = "";
-    let detailValue = capitalizeFirstLetter(user.role);
-
-    if (user.role === 'mahasiswa') {
-      detailPrefix = "NIM:";
-      // @ts-ignore // Assuming user object might have nim, will be undefined if not
-      detailValue = user.nim || user.email?.split('@')[0] || 'N/A';
-    } else if (user.role === 'dosen') {
-      detailPrefix = "NIP:";
-       // @ts-ignore // Assuming user object might have nip, will be undefined if not
-      detailValue = user.nip || user.email?.split('@')[0] || 'N/A';
+    
+    let detailLine = "";
+    if (user.role === 'mahasiswa' && user.studentId) {
+      detailLine = `NIM: ${user.studentId}`;
+    } else if (user.role === 'dosen' && user.studentId) { // Assuming studentId field is used for NIP for dosen
+      detailLine = `NIP: ${user.studentId}`;
+    } else if (user.role === 'admin') {
+      detailLine = `Role: Admin`;
     }
+
     return (
        <>
-        <p className="text-sm font-medium leading-none truncate" title={user?.email}>{user?.email}</p>
-        <p className="text-xs leading-none text-muted-foreground pt-1">
-          {detailPrefix && <span className="mr-1">{detailPrefix}</span>}
-          {detailValue}
+        <p className="text-sm font-medium leading-none truncate" title={user.name || user.email || ""}>
+          {user.name || user.email}
         </p>
+        {detailLine && <p className="text-xs leading-none text-muted-foreground pt-1">{detailLine}</p>}
        </>
     );
   };
@@ -181,17 +178,6 @@ export function AppHeader() {
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
-       {/* 
-        <DropdownMenuItem className="cursor-pointer">
-          <Bell className="mr-2 h-4 w-4" />
-          <span>Notifications</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator /> 
-      */}
       <DropdownMenuItem onClick={logoutUser} disabled={authLoading} className="cursor-pointer">
         <LogOut className="mr-2 h-4 w-4" />
         <span>Logout</span>
@@ -202,11 +188,10 @@ export function AppHeader() {
   const renderNavItems = (items: NavItemConfig[], isMobile: boolean) => {
     return items.map((item) => {
       const ItemIcon = item.icon;
-      const key = `${item.href || item.label}-${item.label}`; // Ensure unique key for items, especially dropdowns
+      const key = `${item.href || item.label}-${item.label}`; 
 
       if (item.isDropdown && item.children && item.children.length > 0) {
         if (isMobile) {
-          // Mobile: Render as a section with a label, then list child items
           return (
             <div key={key} className="pt-2">
               <p className="px-3 py-2 text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center">
@@ -218,7 +203,7 @@ export function AppHeader() {
                      <NavLink 
                         href={child.href} 
                         itemIcon={child.icon} 
-                        className="font-normal pl-5" // Indent child items
+                        className="font-normal pl-5"
                         onClick={() => setMobileMenuOpen(false)}
                         isSheetLink={true}
                       >
@@ -230,7 +215,6 @@ export function AppHeader() {
             </div>
           );
         }
-        // Desktop: Render as DropdownMenu
         return (
           <DropdownMenu key={key}>
             <DropdownMenuTrigger asChild>
@@ -256,7 +240,6 @@ export function AppHeader() {
           </DropdownMenu>
         );
       }
-      // Regular NavLink for Desktop or specific mobile cases if not dropdown
       if (item.href) { 
         return (
           <NavLink 
@@ -303,8 +286,8 @@ export function AppHeader() {
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start items-center gap-2 h-auto py-2 px-3 text-left">
                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={user?.photoURL || `https://placehold.co/100x100.png?text=${getInitials(user?.email)}`} alt="User Avatar" data-ai-hint="person" />
-                            <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
+                            <AvatarImage src={user?.avatarUrl || `https://placehold.co/100x100.png?text=${getInitials(user?.name, user?.email)}`} alt="User Avatar" data-ai-hint="person" />
+                            <AvatarFallback>{getInitials(user?.name, user?.email)}</AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col items-start overflow-hidden">
                            <UserSpecificInfo />
@@ -343,8 +326,8 @@ export function AppHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={user.photoURL || `https://placehold.co/100x100.png?text=${getInitials(user.email)}`} alt="User Avatar" data-ai-hint="person"/>
-                  <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                  <AvatarImage src={user.avatarUrl || `https://placehold.co/100x100.png?text=${getInitials(user.name, user.email)}`} alt="User Avatar" data-ai-hint="person"/>
+                  <AvatarFallback>{getInitials(user.name, user.email)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
