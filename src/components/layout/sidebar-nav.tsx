@@ -48,7 +48,7 @@ const adminNavItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { user, initialLoading, logoutUser, loading: authLoading } = useAuth();
+  const { user, initialLoading } = useAuth(); // Removed logoutUser and authLoading as they are not used here anymore
 
   const renderNavItem = (item: typeof mainNavItems[0]) => (
     <SidebarMenuItem key={item.href}>
@@ -72,11 +72,10 @@ export function SidebarNav() {
   );
   
   const filteredMainNavs = mainNavItems.filter(item => {
-    if (!item.requiredRole) return true; // Accessible to all (even unauthenticated for some like Schedule)
-    if (!user) return false; // Needs login but user not logged in
-    if (user.role === 'admin') return true; // Admin sees all
+    if (!item.requiredRole) return true; 
+    if (!user) return false; 
+    if (user.role === 'admin') return true; 
     if (user.role === 'dosen') {
-        // Dosen can see dashboard, schedule. Specific Dosen views for KHS/KRS would need more logic.
         return item.href === "/" || item.href === "/schedule";
     }
     return user.role === item.requiredRole;
@@ -111,6 +110,8 @@ export function SidebarNav() {
         </>
       )}
 
+      {/* Logout button removed from here as it's in the avatar dropdown */}
+      {/* 
       <SidebarSeparator className="my-2" />
       {user && (
         <SidebarMenuItem>
@@ -125,6 +126,7 @@ export function SidebarNav() {
           </SidebarMenuButton>
         </SidebarMenuItem>
       )}
+      */}
     </SidebarMenu>
   );
 }
@@ -147,10 +149,6 @@ export function FullSidebar() {
       <div data-sidebar="content" className="flex-1 overflow-y-auto py-2">
         <SidebarNav />
       </div>
-       {/* Optionally, add user info at the bottom of sidebar */}
-      {/* <div data-sidebar="footer" className="border-t border-sidebar-border p-2">
-        User Info / Quick Actions
-      </div> */}
     </>
   );
 }
