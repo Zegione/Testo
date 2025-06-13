@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname, useRouter }
 from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Added useEffect
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,31 +35,45 @@ import {
   ChevronRight,
   ShieldCheck
 } from "lucide-react";
-import { mainNavItems, adminNavItems, NavItem } from "./sidebar-nav"; // Assuming sidebar-nav exports these
+import { mainNavItems, adminNavItems, NavItem } from "./sidebar-nav"; 
 
 // Helper function to extract page title from pathname or use a default
 const getPageTitle = (pathname: string, navItems: NavItem[], adminNavs: NavItem[], userRole?: string): string => {
-  const allNavs = [...navItems, ...adminNavs];
-  const currentNavItem = allNavs.find(item => {
-    if (item.href === "/" && pathname === "/") return true;
-    return item.href !== "/" && pathname.startsWith(item.href);
-  });
+  const allNavs = [...navItems, ...adminNavs].filter(Boolean); // Ensure no undefined items
+  
+  // Exact match for homepage first
+  if (pathname === "/" || pathname === "/(app)") {
+    const dashboardItem = allNavs.find(item => item.href === "/");
+    return dashboardItem ? dashboardItem.label : "Dashboard";
+  }
 
-  if (currentNavItem) return currentNavItem.label;
+  // Find the most specific matching path
+  let longestMatch = "";
+  let title = "EduCentral";
+
+  for (const item of allNavs) {
+    if (item.href !== "/" && pathname.startsWith(item.href)) {
+      if (item.href.length > longestMatch.length) {
+        longestMatch = item.href;
+        title = item.label;
+      }
+    }
+  }
+  
+  if (longestMatch) return title;
 
   // Fallback titles for common pages not in nav or dynamic ones
-  if (pathname.startsWith("/(app)/course-recommendations")) return "AI Course Recommendations";
-  if (pathname === "/(app)") return "Dashboard";
-
-
-  // Default or derive from path
+  if (pathname.startsWith("/(app)/course-recommendations") || pathname.startsWith("/course-recommendations")) return "AI Course Recommendations";
+  
+  // Default or derive from path if no match found
   const pathParts = pathname.split('/').filter(Boolean);
-  const lastPart = pathParts[pathParts.length -1];
-  return lastPart ? lastPart.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "EduCentral";
+  const lastPart = pathParts.length > 1 ? pathParts[pathParts.length -1] : (pathParts[0] || "App"); // Avoid using '(app)'
+  
+  return lastPart !== "(app)" ? lastPart.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "EduCentral";
 };
 
 
-export function AppHeader({ initialPageTitle }: { initialPageTitle?: string }) {
+export function AppHeader() { // Removed initialPageTitle prop
   const { user, logoutUser, loading: authLoading, initialLoading } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -68,18 +82,18 @@ export function AppHeader({ initialPageTitle }: { initialPageTitle?: string }) {
 
   const filteredMainNavs = mainNavItems.filter(item => {
     if (!item.requiredRole) return true;
-    if (!user) return false;
-    if (user.role === 'admin') return true;
-    if (user.role === 'dosen') {
+    if (!user) return false; // Should not happen if layout protects routes
+    if (user.role === 'admin') return true; // Admin sees all main navs
+    if (user.role === 'dosen') { // Dosen sees dashboard and schedule
         return item.href === "/" || item.href === "/schedule";
     }
-    return user.role === item.requiredRole;
+    // Mahasiswa sees items matching 'mahasiswa' role or undefined role
+    return user.role === item.requiredRole || item.requiredRole === undefined;
   });
 
   const filteredAdminNavs = adminNavItems.filter(item => user && user.role === 'admin');
   const allUserNavItems = [...filteredMainNavs, ...filteredAdminNavs];
 
-  // Dynamically set page title based on current path and nav items
   const pageTitle = getPageTitle(pathname, filteredMainNavs, filteredAdminNavs, user?.role);
 
 
@@ -97,13 +111,15 @@ export function AppHeader({ initialPageTitle }: { initialPageTitle?: string }) {
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
 
-  const NavLink = ({ href, children, itemIcon: Icon }: { href: string; children: React.ReactNode, itemIcon: React.ElementType }) => (
+  const NavLink = ({ href, children, itemIcon: Icon, isSheetLink = false }: { href: string; children: React.ReactNode, itemIcon: React.ElementType, isSheetLink?: boolean }) => (
     <Link
       href={href}
-      onClick={() => setMobileMenuOpen(false)}
+      onClick={() => { if (isSheetLink) setMobileMenuOpen(false); }}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-        (pathname === href || (href !== "/" && pathname.startsWith(href))) && "text-primary bg-muted"
+        (pathname === href || (href !== "/" && pathname.startsWith(item.href || href))) && "text-primary bg-muted",
+        !isSheetLink && "px-2 py-1 text-sm transition-colors hover:text-foreground", // Desktop specific
+        !isSheetLink && (pathname === href || (href !== "/" && pathname.startsWith(item.href || href))) ? "text-foreground font-medium" : !isSheetLink && "text-muted-foreground" // Desktop active/inactive
       )}
     >
       <Icon className="h-4 w-4" />
@@ -142,7 +158,6 @@ export function AppHeader({ initialPageTitle }: { initialPageTitle?: string }) {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-md md:px-6">
-      {/* Mobile Menu Trigger & Logo */}
       <div className="flex items-center">
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
@@ -160,7 +175,7 @@ export function AppHeader({ initialPageTitle }: { initialPageTitle?: string }) {
             </div>
             <nav className="flex-1 grid gap-2 p-4 text-sm font-medium">
               {allUserNavItems.map((item) => (
-                <NavLink key={item.href} href={item.href} itemIcon={item.icon}>
+                <NavLink key={item.href} href={item.href} itemIcon={item.icon} isSheetLink={true}>
                   {item.label}
                 </NavLink>
               ))}
@@ -194,27 +209,16 @@ export function AppHeader({ initialPageTitle }: { initialPageTitle?: string }) {
         </Link>
       </div>
 
-      {/* Desktop Navigation */}
-      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6 mx-auto">
+      <nav className="hidden flex-col gap-1 text-lg font-medium md:flex md:flex-row md:items-center md:mx-auto md:gap-3 lg:gap-4">
         {allUserNavItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "transition-colors hover:text-foreground px-2 py-1",
-              (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)))
-                ? "text-foreground font-medium"
-                : "text-muted-foreground"
-            )}
-          >
+          <NavLink key={item.href} href={item.href} itemIcon={item.icon}>
             {item.label}
-          </Link>
+          </NavLink>
         ))}
       </nav>
 
-      {/* Page Title & User Avatar Dropdown (Desktop) */}
       <div className="flex items-center gap-4 ml-auto">
-         <h1 className="text-lg font-semibold md:text-xl hidden lg:block mr-4">{pageTitle}</h1>
+         <h1 className="text-lg font-semibold md:text-xl hidden lg:block mr-4 whitespace-nowrap">{pageTitle}</h1>
         {initialLoading ? (
             <Avatar className="h-9 w-9">
                  <AvatarFallback>?</AvatarFallback>
@@ -239,12 +243,11 @@ export function AppHeader({ initialPageTitle }: { initialPageTitle?: string }) {
   );
 }
 
-// Ensure page-specific headers still get their titles
+// Hook to allow pages to suggest a title, though AppHeader's getPageTitle is primary
 export function usePageTitle(title: string) {
-  // This is a placeholder for how a page might update the title
-  // In a real app, you might use a Context or a Zustand store for this
   useEffect(() => {
-    // console.log("Setting page title (concept):", title);
-    // document.title = `${title} | EduCentral`; // Example of setting document title
+    // This could potentially integrate with a context if more complex title management is needed
+    // For now, it's a conceptual hook that pages *could* use.
+    // console.log("Page suggests title:", title);
   }, [title]);
 }

@@ -1,6 +1,7 @@
+
 "use client";
 
-import { AppHeader } from "@/components/layout/app-header";
+// import { AppHeader } from "@/components/layout/app-header"; // Removed, layout handles header
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,7 +45,7 @@ export default function KhsPage() {
 
   return (
     <>
-      <AppHeader pageTitle="Kartu Hasil Studi (KHS)" />
+      {/* AppHeader is now rendered by the layout */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         <Card className="shadow-lg">
           <CardHeader>

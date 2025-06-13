@@ -1,7 +1,6 @@
 
 "use client";
 
-import { AppHeader } from "@/components/layout/app-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Bell, BookOpen, CalendarCheck2, TrendingUp, GraduationCap as GraduationCapIcon, LineChart as LineChartIcon, FileText as FileTextIcon, Users, Edit } from "lucide-react";
@@ -15,6 +14,7 @@ import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTool
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend as RechartsLegend, ResponsiveContainer } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { usePageTitle } from "@/components/layout/app-header"; // Assuming this hook might be used by pages
 
 // Data KHS (sama seperti di halaman KHS untuk contoh ini)
 const khsData: { [semester: string]: { courseId: string; courseName: string; credits: number; grade: string; score: number }[] } = {
@@ -69,6 +69,7 @@ const dosenSummaryCards = [
 
 export default function DashboardPage() {
   const { user, initialLoading } = useAuth();
+  // usePageTitle("Dashboard"); // Page can set its title if needed, AppHeader will derive it too
   const [selectedSemester, setSelectedSemester] = useState<string>("1");
   
   useEffect(() => {
@@ -128,7 +129,7 @@ export default function DashboardPage() {
   if (initialLoading) {
     return (
       <>
-        <AppHeader pageTitle="Dashboard" />
+        {/* AppHeader is now rendered by the layout */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
           <Card className="shadow-lg">
             <CardHeader>
@@ -172,7 +173,7 @@ export default function DashboardPage() {
   if (user?.role === 'mahasiswa') {
     return (
       <>
-        <AppHeader pageTitle="Dashboard Mahasiswa" />
+        {/* AppHeader is now rendered by the layout */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
           <Card className="shadow-lg">
             <CardHeader>
@@ -311,7 +312,7 @@ export default function DashboardPage() {
   if (user?.role === 'dosen') {
     return (
       <>
-        <AppHeader pageTitle="Dashboard Dosen" />
+        {/* AppHeader is now rendered by the layout */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
           <Card className="shadow-lg">
             <CardHeader>
@@ -389,7 +390,7 @@ export default function DashboardPage() {
   // GENERIC/ADMIN DASHBOARD
   return (
     <>
-      <AppHeader pageTitle="Dashboard Admin" />
+      {/* AppHeader is now rendered by the layout */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         <Card className="shadow-lg">
           <CardHeader>

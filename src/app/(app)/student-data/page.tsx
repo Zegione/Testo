@@ -1,4 +1,5 @@
-import { AppHeader } from "@/components/layout/app-header";
+
+// import { AppHeader } from "@/components/layout/app-header"; // Removed, layout handles header
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,7 +23,7 @@ const student = {
 export default function StudentDataPage() {
   return (
     <>
-      <AppHeader pageTitle="Student Data" />
+      {/* AppHeader is now rendered by the layout */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <Tabs defaultValue="biodata" className="w-full">
           <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-flex mb-6 shadow-sm">

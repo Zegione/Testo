@@ -1,6 +1,7 @@
+
 "use client";
 
-import { AppHeader } from "@/components/layout/app-header";
+// import { AppHeader } from "@/components/layout/app-header"; // Removed, layout handles header
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +54,7 @@ export default function KrsPage() {
 
   return (
     <>
-      <AppHeader pageTitle="KRS Submission" />
+      {/* AppHeader is now rendered by the layout */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         <Card className="shadow-lg">
           <CardHeader>

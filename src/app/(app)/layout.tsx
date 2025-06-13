@@ -21,12 +21,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   if (initialLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        {/* Simplified Skeleton for Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur md:px-6">
-          <Skeleton className="h-7 w-7 rounded-md md:hidden" /> {/* Hamburger placeholder */}
-          <Skeleton className="h-6 w-24 rounded-md" /> {/* Logo placeholder */}
+          <Skeleton className="h-7 w-7 rounded-md md:hidden" /> 
+          <Skeleton className="h-6 w-24 rounded-md" /> 
           <div className="ml-auto flex items-center gap-2 md:gap-4">
-            <Skeleton className="h-9 w-9 rounded-full" /> {/* Avatar placeholder */}
+            <Skeleton className="h-9 w-9 rounded-full" /> 
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6 flex items-center justify-center">
@@ -44,11 +43,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // AppHeader will now manage its own navigation structure
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <AppHeader pageTitle="Dynamic Title" /> {/* pageTitle will be set by individual pages or a context */}
-      <main className="flex-1 overflow-y-auto p-4 pt-6 md:p-6 md:pt-8"> {/* Added padding top */}
+      {/* AppHeader is now solely responsible for its title and navigation */}
+      <AppHeader /> 
+      <main className="flex-1 overflow-y-auto p-4 pt-6 md:p-6 md:pt-8"> 
         {children}
       </main>
     </div>

@@ -1,4 +1,5 @@
-import { AppHeader } from "@/components/layout/app-header";
+
+// import { AppHeader } from "@/components/layout/app-header"; // Removed, layout handles header
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +23,7 @@ const examSchedule = [
 export default function SchedulePage() {
   return (
     <>
-      <AppHeader pageTitle="Schedules" />
+      {/* AppHeader is now rendered by the layout */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <Tabs defaultValue="lectures" className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex mb-6 shadow-sm">
