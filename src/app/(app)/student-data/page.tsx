@@ -11,18 +11,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Download, Printer, Edit3, Save, XCircle, UploadCloud } from "lucide-react";
 import Image from "next/image";
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth"; // Import useAuth
 
-const initialStudentData = {
+const initialStudentDataBase = { // Base data without email
   name: "John Doe",
   studentId: "123456789",
   faculty: "Engineering",
   major: "Computer Science",
-  email: "john.doe@example.com",
   phone: "081234567890",
   address: "123 Main Street, Anytown, ID",
   avatarUrl: "https://placehold.co/150x150.png",
@@ -35,7 +35,7 @@ const profileFormSchema = z.object({
   studentId: z.string().min(5, "Student ID must be at least 5 characters."),
   faculty: z.string().min(3, "Faculty must be at least 3 characters."),
   major: z.string().min(3, "Major must be at least 3 characters."),
-  email: z.string().email("Invalid email address."),
+  email: z.string().email("Invalid email address.").readonly(), // Mark as readonly in schema if desired, or handle via UI
   phone: z.string().optional().or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
 });
@@ -43,14 +43,26 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function StudentDataPage() {
-  const [studentData, setStudentData] = useState(initialStudentData);
+  const { user } = useAuth(); // Get user from AuthContext
+  const { toast } = useToast();
+
+  const [studentData, setStudentData] = useState(() => ({
+    ...initialStudentDataBase,
+    email: user?.email || "loading...", // Initialize email from user or placeholder
+  }));
   const [isEditing, setIsEditing] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string>(studentData.avatarUrl);
-  const { toast } = useToast();
+
+  // Effect to update studentData.email when user.email changes
+  useEffect(() => {
+    if (user?.email && studentData.email !== user.email) {
+      setStudentData(prev => ({ ...prev, email: user.email! }));
+    }
+  }, [user?.email, studentData.email]);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: {
+    defaultValues: { // Default values will be updated by the effect below
       name: studentData.name,
       studentId: studentData.studentId,
       faculty: studentData.faculty,
@@ -61,20 +73,22 @@ export default function StudentDataPage() {
     },
   });
 
+  // Effect to reset form when edit mode changes or relevant studentData changes
   useEffect(() => {
+    form.reset({
+      name: studentData.name,
+      studentId: studentData.studentId,
+      faculty: studentData.faculty,
+      major: studentData.major,
+      email: studentData.email, // studentData.email is synced with user.email
+      phone: studentData.phone,
+      address: studentData.address,
+    });
     if (isEditing) {
-      form.reset({
-        name: studentData.name,
-        studentId: studentData.studentId,
-        faculty: studentData.faculty,
-        major: studentData.major,
-        email: studentData.email,
-        phone: studentData.phone,
-        address: studentData.address,
-      });
-      setAvatarPreview(studentData.avatarUrl); // Reset preview to current saved avatar
+      setAvatarPreview(studentData.avatarUrl); // Ensure preview is current when entering edit mode
     }
-  }, [isEditing, studentData, form]);
+  }, [isEditing, studentData.name, studentData.studentId, studentData.faculty, studentData.major, studentData.email, studentData.phone, studentData.address, studentData.avatarUrl, form]);
+
 
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -88,10 +102,12 @@ export default function StudentDataPage() {
   };
 
   const onSubmit = (data: ProfileFormValues) => {
+    // Email from 'data' is the auth email because the input was readOnly
     setStudentData(prev => ({
       ...prev,
-      ...data,
+      ...data, // data.email will be the auth email
       avatarUrl: avatarPreview,
+      email: studentData.email, // Ensure it remains the synced email from auth user
     }));
     setIsEditing(false);
     toast({
@@ -102,15 +118,7 @@ export default function StudentDataPage() {
   };
 
   const handleCancel = () => {
-    form.reset({
-      name: studentData.name,
-      studentId: studentData.studentId,
-      faculty: studentData.faculty,
-      major: studentData.major,
-      email: studentData.email,
-      phone: studentData.phone,
-      address: studentData.address,
-    });
+    // Form reset is handled by the useEffect watching 'isEditing'
     setAvatarPreview(studentData.avatarUrl); // Reset avatar preview to last saved state
     setIsEditing(false);
   };
@@ -248,11 +256,18 @@ export default function StudentDataPage() {
                           <FormLabel>Email</FormLabel>
                           {isEditing ? (
                             <FormControl>
-                              <Input placeholder="your.email@example.com" {...field} />
+                              <Input 
+                                placeholder="your.email@example.com" 
+                                {...field} 
+                                readOnly 
+                                disabled 
+                                className="bg-muted/50 cursor-not-allowed border-dashed" 
+                              />
                             </FormControl>
                           ) : (
                             <p className="text-sm font-medium py-2">{studentData.email}</p>
                           )}
+                          <FormDescription>Your login email (cannot be changed here).</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -338,3 +353,4 @@ export default function StudentDataPage() {
   );
 }
 
+    
