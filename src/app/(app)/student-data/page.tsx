@@ -14,7 +14,7 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth"; // Import useAuth
 
@@ -189,7 +189,6 @@ export default function StudentDataPage() {
                                 <FormControl>
                                   <Input placeholder="Student ID" {...field} className="text-sm h-auto p-1 border-0 focus-visible:ring-1 focus-visible:ring-ring" />
                                 </FormControl>
-                                <FormDescription>Student ID</FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -352,5 +351,3 @@ export default function StudentDataPage() {
     </>
   );
 }
-
-    
