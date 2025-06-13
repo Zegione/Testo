@@ -6,30 +6,33 @@ import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react"; 
 import {
   LayoutDashboard,
-  ClipboardList, // Icon for "Daftar Nilai"
-  UserCircle, // Icon for "Data"
+  ClipboardList, 
+  UserCircle, 
   FileText,
-  Activity, // Icon for "Kemajuan Belajar"
+  Activity, 
   GraduationCap,
   Sparkles,
   BookOpen,
   Users, 
   ShieldCheck,
-  Archive, // Re-using for Data
-  ListChecks, // Re-using for Daftar Nilai
+  Archive, 
+  ListChecks, 
+  CalendarCheck2, // Added for Schedule
+  Edit3, // Added for KRS
+  CheckSquare, // Added for Attendance
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { UserRole } from "@/contexts/AuthContext"; 
 
 
 export interface NavItemConfig {
-  href?: string; // Optional: not needed if it's just a dropdown trigger that doesn't navigate itself
+  href?: string; 
   label: string;
   icon: LucideIcon;
-  requiredRole?: UserRole | 'admin' | 'all'; // 'all' for visible to any logged-in user
-  children?: NavItemConfig[]; // For dropdown items
-  isDropdown?: boolean; // To explicitly mark a top-level item as a dropdown trigger
-  isExternal?: boolean; // For external links if any
+  requiredRole?: UserRole | 'admin' | 'all'; 
+  children?: NavItemConfig[]; 
+  isDropdown?: boolean; 
+  isExternal?: boolean; 
 }
 
 
@@ -42,26 +45,43 @@ export const mainNavItems: NavItemConfig[] = [
   },
   {
     label: "Data",
-    icon: Archive, // Using Archive icon for "Data"
+    icon: Archive, 
     isDropdown: true,
-    requiredRole: 'mahasiswa', // Assuming "Data" dropdown is mainly for mahasiswa
+    requiredRole: 'mahasiswa', 
     children: [
       { href: "/student-data", label: "Biodata Mahasiswa", icon: UserCircle, requiredRole: "mahasiswa" },
+      { href: "/attendance", label: "Absensi Kuliah", icon: CheckSquare, requiredRole: "mahasiswa" },
     ],
   },
   {
     label: "Daftar Nilai",
-    icon: ListChecks, // Using ListChecks icon for "Daftar Nilai"
+    icon: ListChecks, 
     isDropdown: true,
-    requiredRole: 'mahasiswa', // Assuming "Daftar Nilai" is mainly for mahasiswa
+    requiredRole: 'mahasiswa', 
     children: [
       { href: "/khs", label: "KHS", icon: FileText, requiredRole: "mahasiswa" },
-      { href: "/", label: "Kemajuan Belajar", icon: Activity, requiredRole: "mahasiswa" }, // Links to dashboard for progress
-      { href: "/khs", label: "Resume Nilai", icon: ClipboardList, requiredRole: "mahasiswa" }, // Links to KHS for now
+      { href: "/", label: "Kemajuan Belajar", icon: Activity, requiredRole: "mahasiswa" }, 
+      { href: "/khs", label: "Resume Nilai", icon: ClipboardList, requiredRole: "mahasiswa" }, 
     ],
   },
-  // Previous items like KRS, Schedule, Course AI are removed as per new structure.
-  // Add them back here if needed.
+   {
+    href: "/krs",
+    label: "KRS Submission",
+    icon: Edit3,
+    requiredRole: "mahasiswa",
+  },
+  {
+    href: "/schedule",
+    label: "Schedule",
+    icon: CalendarCheck2,
+    requiredRole: "all",
+  },
+  {
+    href: "/course-recommendations",
+    label: "AI Recommendations",
+    icon: Sparkles,
+    requiredRole: "mahasiswa",
+  },
 ];
 
 export const adminNavItems: NavItemConfig[] = [
@@ -89,3 +109,4 @@ export function Logo() {
     </div>
   );
 }
+
