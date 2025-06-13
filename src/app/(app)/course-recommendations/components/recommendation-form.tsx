@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,11 +17,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { recommendCourses, CourseRecommendationOutput } from "@/ai/flows/course-recommendations";
+import { CourseRecommendationOutput } from "@/ai/flows/course-recommendations"; // CourseRecommendationInput is implicitly used via formSchema
+import { getRecommendationsAction } from "../actions"; // Import the server action
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// This schema should align with CourseRecommendationInput from the flow
 const formSchema = z.object({
   studentId: z.string().min(1, "Student ID is required."),
   academicTranscript: z.string().min(10, "Academic transcript is required and should be detailed."),
@@ -28,18 +31,6 @@ const formSchema = z.object({
 });
 
 type RecommendationFormValues = z.infer<typeof formSchema>;
-
-// Server action to call the Genkit flow
-async function getRecommendationsAction(data: RecommendationFormValues): Promise<CourseRecommendationOutput | { error: string }> {
-  "use server";
-  try {
-    const result = await recommendCourses(data);
-    return result;
-  } catch (error) {
-    console.error("Error getting recommendations:", error);
-    return { error: error instanceof Error ? error.message : "An unknown error occurred." };
-  }
-}
 
 
 export function RecommendationForm() {
@@ -59,6 +50,7 @@ export function RecommendationForm() {
   async function onSubmit(data: RecommendationFormValues) {
     setIsLoading(true);
     setRecommendations(null);
+    // Call the imported server action
     const result = await getRecommendationsAction(data);
     setIsLoading(false);
 
