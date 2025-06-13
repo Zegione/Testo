@@ -3,7 +3,9 @@
 
 import React, { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, updateUserDocument } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth"; // Corrected import path for useAuth
+import { updateUserDocument } from "@/contexts/AuthContext"; // updateUserDocument is exported here
+import { serverTimestamp } from "firebase/firestore"; // Added for profileCompletedAt
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
